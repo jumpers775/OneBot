@@ -1,2 +1,4 @@
 # simplebot
 Simple whitelist/basic moderation discord bot
+
+All that is required for use is adding a token to the token variable in the bot.py file. use !help for a list of commands. ROLES AND CHANNEL PERMISSIONS MUST BE MANUALLY SET! SOME CHANNELS AND ROLES WILL BE ADDED AND THE NAMES MUST STAY THE SAME. the bot will automatically assign the Non-Allowed role to any users that join. this is recommended to be the non whitelisted role. The access role will be given to a user when they are verified, and the Non-access role will be removed. the !gen <user_id> command can only be used in #codes. the !verify <code> command can only be used in #verify. once a code is given to a user, only that user will be able to use the code. the highest number of messages that can be purged at a time is 99. the bots tole must be set above all of these rules, and it requires admin to make and delete roles/channels.
