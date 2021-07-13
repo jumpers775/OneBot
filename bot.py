@@ -16,8 +16,10 @@ token = 'PUT_TOKEN_HERE'
 
 @bot.event
 async def on_guild_join(guild):
-    await guild.create_role(name="muted")
     muted = discord.utils.get(guild.roles, name="muted")
+    if muted == None:
+        await guild.create_role(name="muted")
+        muted = discord.utils.get(guild.roles, name="muted")
     for channel in guild.channels:
         await channel.set_permissions(muted, speak=False, send_messages=False, read_message_history=True, read_messages=True)
     return
