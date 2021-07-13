@@ -11,7 +11,7 @@ from discord.ext import commands
 intents = discord.Intents.default()
 intents.members = True
 
-bot = commands.Bot(command_prefix = '!', intents=intents, activity=discord.Game(name='!help'))
+bot = commands.Bot(command_prefix = '!', intents=intents, activity=discord.Game(name='!help'),help_command=None)
 token = 'PUT_TOKEN_HERE'
 
 @bot.event
@@ -89,4 +89,11 @@ async def unban(ctx, *, member):
             await ctx.channel.send(f'Unbanned {user.mention}')
             return
 
+        
+
+@bot.command()
+async def help(ctx):
+    await ctx.channel.send('how the bot works: \n*!mute <user>* mutes a user. must have vc mute perms \n*!unmute <user>* unmutes a user. must have vc mute perms \n*!purge* <messages to be purged> deleats the most recent messages in a channel. must have manage message perms \n*!kick <user>* kicks a user. must have kick perms \n*!ban <user> <reason - not required>* bans a user for the reason specified. must have ban perms. \n*!unban <user>* unbans a user. must have ban perms.')
+    return        
+        
 bot.run(token)
