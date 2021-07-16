@@ -1,18 +1,24 @@
 # bot.py
-from asyncio.windows_events import NULL
 from logging import error
 import os
 import random
 import itertools
+from aiohttp import payload
 import discord
+import youtube_dl
+import json
+from youtube_search import YoutubeSearch
 from discord import message
 from discord.flags import Intents
 from discord.ext import commands
 intents = discord.Intents.default()
 intents.members = True
+intents.reactions = True
 
-bot = commands.Bot(command_prefix = '!', intents=intents, activity=discord.Game(name='!help'),help_command=None)
-token = 'PUT_TOKEN_HERE'
+prefix = '$'
+token = 'ODY1Mzk3NTM3NzYxMTMyNTQ1.YPDaQw.uaMgGAPB07wOP9XdtqHLExOH8ac'
+
+bot = commands.Bot(command_prefix = prefix, intents=intents, activity=discord.Game(name=f'{prefix}help'), help_command=None)
 
 @bot.event
 async def on_guild_join(guild):
@@ -25,7 +31,7 @@ async def on_guild_join(guild):
     return
 
 @bot.command()
-@commands.has_permissions(mute_members = True)
+@commands.has_permissions(administrator = True)
 async def mute(ctx, arg):
     numeric_filter = filter(str.isdigit, arg)
     numeric_string = "".join(numeric_filter)
@@ -36,7 +42,7 @@ async def mute(ctx, arg):
     await ctx.send(f'{member.mention} has been muted.')
 
 @bot.command()
-@commands.has_permissions(mute_members = True)
+@commands.has_permissions(administrator = True)
 async def unmute(ctx, arg):
     numeric_filter = filter(str.isdigit, arg)
     numeric_string = "".join(numeric_filter)
@@ -46,7 +52,7 @@ async def unmute(ctx, arg):
     await ctx.send(f'{member.mention} has been unmuted.')
 
 @bot.command()
-@commands.has_permissions(manage_messages = True)
+@commands.has_permissions(administrator = True)
 async def purge(ctx, arg: int):
     channel = ctx.channel
     messages = []
@@ -56,13 +62,13 @@ async def purge(ctx, arg: int):
     await channel.send(f"Successfully removed the last {arg} messages")
 
 @bot.command()
-@commands.has_permissions(kick_members = True)
+@commands.has_permissions(administrator = True)
 async def kick(ctx, member: discord.Member, *, reason=None):
     await member.kick(reason=reason)
     await ctx.send(f'User {member} has been kicked')
 
 @bot.command()
-@commands.has_permissions(ban_members = True)
+@commands.has_permissions(administrator = True)
 async def ban(ctx, member: discord.Member, *, reason=None):
     if member == None:
         await ctx.channel.send("Could not find user.")
@@ -78,7 +84,7 @@ async def ban(ctx, member: discord.Member, *, reason=None):
     await ctx.channel.send(f"{member} is banned for {reason}")
 
 @bot.command()
-@commands.has_permissions(ban_members = True)
+@commands.has_permissions(administrator = True)
 async def unban(ctx, *, member):
     banned_users = await ctx.guild.bans()
     member_name, member_discriminator = member.split("#")
@@ -89,11 +95,66 @@ async def unban(ctx, *, member):
             await ctx.channel.send(f'Unbanned {user.mention}')
             return
 
-        
+
+
+@bot.command()
+async def search(ctx, *, arg):
+    voice_channel = discord.utils.get(ctx.guild.channels, name="music", type="ChannelType.voice")
+    results = YoutubeSearch(arg, max_results=5,).to_json()
+    json1 = json.loads(results)
+    list = ''
+    num = 0
+    for video in json1['videos']:
+        num = num + 1
+        list = (list + '\n' + str(num) + ' ' + '`' + video["title"] + '`')
+    await ctx.send(list)
+    if ctx.channel.last_message.reference != None:
+        print(ctx.channel.last_message.reference)
+        num = 0
+        for video in json1['videos']:
+            num = num + 1
+            if num == 1:
+                title = video['title']
+                video = 'https://www.youtube.com' + video['url_suffix']
+        message.edit(f'`{title}` has been selected')
+    if ctx.channel.last_message.author :
+        num = 0
+        for video in json1['videos']:
+            num = num + 1
+            if num == 2:
+                title = video['title']
+                video = 'https://www.youtube.com' + video['url_suffix']
+        message.edit(f'`{title}` has been selected')    
+    if discord.utils.get(message.reactions, emoji='3️⃣', count=2) == True:
+        num = 0
+        for video in json1['videos']:
+            num = num + 1
+            if num == 3:
+                title = video['title']
+                video = 'https://www.youtube.com' + video['url_suffix']
+        message.edit(f'`{title}` has been selected')
+    if discord.utils.get(message.reactions, emoji='4️⃣', count=2) == True:
+        num = 0
+        for video in json1['videos']:
+            num = num + 1
+            if num == 4:
+                title = video['title']
+                video = 'https://www.youtube.com' + video['url_suffix']
+        message.edit(f'`{title}` has been selected')
+    if discord.utils.get(message.reactions, emoji='5️⃣', count=2) == True:
+        num = 0
+        for video in json1['videos']:
+            num = num + 1
+            if num == 5:
+                title = video['title']
+                video = 'https://www.youtube.com' + video['url_suffix']
+        message.edit(f'`{title}` has been selected')
+    
+
 
 @bot.command()
 async def help(ctx):
-    await ctx.channel.send('how the bot works: \n*!mute <user>* mutes a user. must have vc mute perms \n*!unmute <user>* unmutes a user. must have vc mute perms \n*!purge* <messages to be purged> deleats the most recent messages in a channel. must have manage message perms \n*!kick <user>* kicks a user. must have kick perms \n*!ban <user> <reason - not required>* bans a user for the reason specified. must have ban perms. \n*!unban <user>* unbans a user. must have ban perms.')
-    return        
-        
+    await ctx.channel.send(f'how the bot works: \n*{prefix}mute <user>* mutes a user. must have vc mute perms \n*{prefix}unmute <user>* unmutes a user. must have vc mute perms \n*{prefix}purge* <messages to be purged> deleats the most recent messages in a channel. must have manage message perms \n*{prefix}kick <user>* kicks a user. must have kick perms \n*{prefix}ban <user> <reason - not required>* bans a user for the reason specified. must have ban perms. \n*{prefix}unban <user>* unbans a user. must have ban perms.')
+    return
+
 bot.run(token)
