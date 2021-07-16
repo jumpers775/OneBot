@@ -16,7 +16,7 @@ intents.members = True
 intents.reactions = True
 
 prefix = '$'
-token = 'ODY1Mzk3NTM3NzYxMTMyNTQ1.YPDaQw.uaMgGAPB07wOP9XdtqHLExOH8ac'
+token = 'Put_Token_here'
 
 bot = commands.Bot(command_prefix = prefix, intents=intents, activity=discord.Game(name=f'{prefix}help'), help_command=None)
 
@@ -108,7 +108,7 @@ async def search(ctx, *, arg):
         num = num + 1
         list = (list + '\n' + str(num) + ' ' + '`' + video["title"] + '`')
     await ctx.send(list)
-    if ctx.channel.last_message.reference != None:
+    if ctx.channel.message.reference != None:
         print(ctx.channel.last_message.reference)
         num = 0
         for video in json1['videos']:
