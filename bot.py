@@ -23,7 +23,7 @@ intents.members = True
 intents.reactions = True
 
 prefix = '$'
-token = 'ODY1Mzk3NTM3NzYxMTMyNTQ1.YPDaQw.QZio2XKwmh6PvDjYm70Q_5f1JyM'
+token = 'put bot token here'
 
 bot = commands.Bot(command_prefix = prefix, intents=intents, activity=discord.Game(name=f'{prefix}help'), help_command=None)
 
