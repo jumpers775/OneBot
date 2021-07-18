@@ -1,13 +1,20 @@
 # bot.py
+import asyncio
 from logging import error
 import os
 import random
 import itertools
+import aiohttp
 from aiohttp import payload
 import discord
 import youtube_dl
 import json
-from youtube_search import YoutubeSearch
+import urllib
+import simplejson
+import re
+import time
+import lxml
+from lxml import etree
 from discord import message
 from discord.flags import Intents
 from discord.ext import commands
@@ -16,7 +23,7 @@ intents.members = True
 intents.reactions = True
 
 prefix = '$'
-token = 'Put_Token_here'
+token = 'ODY1Mzk3NTM3NzYxMTMyNTQ1.YPDaQw.QZio2XKwmh6PvDjYm70Q_5f1JyM'
 
 bot = commands.Bot(command_prefix = prefix, intents=intents, activity=discord.Game(name=f'{prefix}help'), help_command=None)
 
@@ -36,10 +43,9 @@ async def mute(ctx, arg):
     numeric_filter = filter(str.isdigit, arg)
     numeric_string = "".join(numeric_filter)
     mute = discord.utils.get(ctx.guild.roles,name="muted")
-    print(discord.utils.get(ctx.guild.roles,name="muted"))
     member = ctx.guild.get_member(int(numeric_string))
     await member.add_roles(mute)
-    await ctx.send(f'{member.mention} has been muted.')
+    await ctx.channel.send(f'{member.mention} has been muted.')
 
 @bot.command()
 @commands.has_permissions(administrator = True)
@@ -98,57 +104,221 @@ async def unban(ctx, *, member):
 
 
 @bot.command()
-async def search(ctx, *, arg):
-    voice_channel = discord.utils.get(ctx.guild.channels, name="music", type="ChannelType.voice")
-    results = YoutubeSearch(arg, max_results=5,).to_json()
-    json1 = json.loads(results)
-    list = ''
+async def search(ctx,*, arg):
+    search_keyword=str(arg)
+    keyword = search_keyword.replace(' ', '+')
+    html = urllib.request.urlopen("https://www.youtube.com/results?search_query=" + keyword)
+    video_ids = re.findall(r"watch\?v=(\S{11})", html.read().decode())
     num = 0
-    for video in json1['videos']:
-        num = num + 1
-        list = (list + '\n' + str(num) + ' ' + '`' + video["title"] + '`')
-    await ctx.send(list)
-    if ctx.channel.message.reference != None:
-        print(ctx.channel.last_message.reference)
-        num = 0
-        for video in json1['videos']:
-            num = num + 1
-            if num == 1:
-                title = video['title']
-                video = 'https://www.youtube.com' + video['url_suffix']
-        message.edit(f'`{title}` has been selected')
-    if ctx.channel.last_message.author :
-        num = 0
-        for video in json1['videos']:
-            num = num + 1
-            if num == 2:
-                title = video['title']
-                video = 'https://www.youtube.com' + video['url_suffix']
-        message.edit(f'`{title}` has been selected')    
-    if discord.utils.get(message.reactions, emoji='3️⃣', count=2) == True:
-        num = 0
-        for video in json1['videos']:
-            num = num + 1
-            if num == 3:
-                title = video['title']
-                video = 'https://www.youtube.com' + video['url_suffix']
-        message.edit(f'`{title}` has been selected')
-    if discord.utils.get(message.reactions, emoji='4️⃣', count=2) == True:
-        num = 0
-        for video in json1['videos']:
-            num = num + 1
-            if num == 4:
-                title = video['title']
-                video = 'https://www.youtube.com' + video['url_suffix']
-        message.edit(f'`{title}` has been selected')
-    if discord.utils.get(message.reactions, emoji='5️⃣', count=2) == True:
-        num = 0
-        for video in json1['videos']:
-            num = num + 1
-            if num == 5:
-                title = video['title']
-                video = 'https://www.youtube.com' + video['url_suffix']
-        message.edit(f'`{title}` has been selected')
+    list = ''
+    message = await ctx.send('searching...')
+    message
+    while num < 5:
+        video = "https://www.youtube.com/watch?v=" + video_ids[num]
+        ydl_opts = {}
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(video, download=False)
+            video_url = info_dict.get("url", None)
+            video_id = info_dict.get("id", None)
+            video_title = info_dict.get('title', None)
+        list = list + str(num + 1) + ' ' + '`' + video_title + '`' + '\n'
+        num += 1
+    await message.edit(content=list)
+    await message.add_reaction('1\N{variation selector-16}\N{combining enclosing keycap}')
+    await message.add_reaction('2\N{variation selector-16}\N{combining enclosing keycap}')
+    await message.add_reaction('3\N{variation selector-16}\N{combining enclosing keycap}')
+    await message.add_reaction('4\N{variation selector-16}\N{combining enclosing keycap}')
+    await message.add_reaction('5\N{variation selector-16}\N{combining enclosing keycap}')
+    def check(reaction, user):
+        return user == ctx.author
+    try:
+        reaction, user = await bot.wait_for('reaction_add', timeout=120.0, check=check)
+    except asyncio.TimeoutError:
+        await ctx.channel.send(f'{ctx.author.mention}, Your request has timed out.')
+    else:
+        print(reaction)
+        if str(reaction) == '1\N{variation selector-16}\N{combining enclosing keycap}':
+            num = 0
+            video = "https://www.youtube.com/watch?v=" + video_ids[num]
+            ydl_opts = {}
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                info_dict = ydl.extract_info(video, download=False)
+                video_url = info_dict.get("url", None)
+                video_id = info_dict.get("id", None)
+                video_title = info_dict.get('title', None)
+            await message.edit(content='Selected: \n `' + video_title + '`')
+            member = ctx.guild.get_member(int(ctx.author.id))
+            if member.voice.channel.id != None:
+                print(member.voice.channel.id)
+                ydl_opts = {
+                    'format': 'bestaudio/best',
+                    'postprocessors': [{
+                        'key': 'FFmpegExtractAudio',
+                        'preferredcodec': 'mp3',
+                        'preferredquality': '192',
+                    }],
+                    'outtmpl': './video0.mp3'
+                }
+                with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                    print(video_id)
+                    ydl.download(['https://www.youtube.com/watch?v=' + str(video_id)])
+                member.voice.channel.connect
+                channel = member.voice.channel
+                vc = await channel.connect()
+                vc.play(discord.FFmpegPCMAudio(source="./video0.mp3"))
+                while vc.is_playing():
+                    time.sleep(.1)
+                os.remove('./video0.mp3')
+            else:
+                ctx.send(f"silly {member.mention}, you must be in a voice channel to do this!")
+        if str(reaction) == '2\N{variation selector-16}\N{combining enclosing keycap}':
+            num = 1
+            video = "https://www.youtube.com/watch?v=" + video_ids[num]
+            ydl_opts = {}
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                info_dict = ydl.extract_info(video, download=False)
+                video_url = info_dict.get("url", None)
+                video_id = info_dict.get("id", None)
+                video_title = info_dict.get('title', None)
+            await message.edit(content='Selected: \n `' + video_title + '`')
+            member = ctx.guild.get_member(int(ctx.author.id))
+            if member.voice.channel.id != None:
+                print(member.voice.channel.id)
+                ydl_opts = {
+                    'format': 'bestaudio/best',
+                    'postprocessors': [{
+                        'key': 'FFmpegExtractAudio',
+                        'preferredcodec': 'mp3',
+                        'preferredquality': '192',
+                    }],
+                    'outtmpl': './video0.mp3'
+                }
+                with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                    print(video_id)
+                    ydl.download(['https://www.youtube.com/watch?v=' + str(video_id)])
+                member.voice.channel.connect
+                channel = member.voice.channel
+                vc = await channel.connect()
+                vc.play(discord.FFmpegPCMAudio(source="./video0.mp3"))
+                while vc.is_playing():
+                    time.sleep(.1)
+                os.remove('./video0.mp3')
+            else:
+                ctx.send(f"silly {member.mention}, you must be in a voice channel to do this!")
+        if str(reaction) == '3\N{variation selector-16}\N{combining enclosing keycap}':
+            num = 2
+            video = "https://www.youtube.com/watch?v=" + video_ids[num]
+            ydl_opts = {}
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                info_dict = ydl.extract_info(video, download=False)
+                video_url = info_dict.get("url", None)
+                video_id = info_dict.get("id", None)
+                video_title = info_dict.get('title', None)
+            await message.edit(content='Selected: \n `' + video_title + '`')
+            member = ctx.guild.get_member(int(ctx.author.id))
+            if member.voice.channel.id != None:
+                print(member.voice.channel.id)
+                ydl_opts = {
+                    'format': 'bestaudio/best',
+                    'postprocessors': [{
+                        'key': 'FFmpegExtractAudio',
+                        'preferredcodec': 'mp3',
+                        'preferredquality': '192',
+                    }],
+                    'outtmpl': './video0.mp3'
+                }
+                with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                    print(video_id)
+                    ydl.download(['https://www.youtube.com/watch?v=' + str(video_id)])
+                member.voice.channel.connect
+                channel = member.voice.channel
+                vc = await channel.connect()
+                vc.play(discord.FFmpegPCMAudio(source="./video0.mp3"))
+                while vc.is_playing():
+                    time.sleep(.1)
+                os.remove('./video0.mp3')
+            else:
+                ctx.send(f"silly {member.mention}, you must be in a voice channel to do this!")
+        if str(reaction) == '4\N{variation selector-16}\N{combining enclosing keycap}':
+            num = 3
+            video = "https://www.youtube.com/watch?v=" + video_ids[num]
+            ydl_opts = {}
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                info_dict = ydl.extract_info(video, download=False)
+                video_url = info_dict.get("url", None)
+                video_id = info_dict.get("id", None)
+                video_title = info_dict.get('title', None)
+            await message.edit(content='Selected: \n `' + video_title + '`')
+            member = ctx.guild.get_member(int(ctx.author.id))
+            if member.voice.channel.id != None:
+                print(member.voice.channel.id)
+                ydl_opts = {
+                    'format': 'bestaudio/best',
+                    'postprocessors': [{
+                        'key': 'FFmpegExtractAudio',
+                        'preferredcodec': 'mp3',
+                        'preferredquality': '192',
+                    }],
+                    'outtmpl': './video0.mp3'
+                }
+                with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                    print(video_id)
+                    ydl.download(['https://www.youtube.com/watch?v=' + str(video_id)])
+                member.voice.channel.connect
+                channel = member.voice.channel
+                vc = await channel.connect()
+                vc.play(discord.FFmpegPCMAudio(source="./video0.mp3"))
+                while vc.is_playing():
+                    time.sleep(.1)
+                os.remove('./video0.mp3')
+            else:
+                ctx.send(f"silly {member.mention}, you must be in a voice channel to do this!")
+        if str(reaction) == '5\N{variation selector-16}\N{combining enclosing keycap}':
+            num = 4
+            video = "https://www.youtube.com/watch?v=" + video_ids[num]
+            ydl_opts = {}
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                info_dict = ydl.extract_info(video, download=False)
+                video_url = info_dict.get("url", None)
+                video_id = info_dict.get("id", None)
+                video_title = info_dict.get('title', None)
+            await message.edit(content='Selected: \n `' + video_title + '`')
+            member = ctx.guild.get_member(int(ctx.author.id))
+            if member.voice.channel.id != None:
+                print(member.voice.channel.id)
+                ydl_opts = {
+                    'format': 'bestaudio/best',
+                    'postprocessors': [{
+                        'key': 'FFmpegExtractAudio',
+                        'preferredcodec': 'mp3',
+                        'preferredquality': '192',
+                    }],
+                    'outtmpl': './video0.mp3'
+                }
+                with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                    print(video_id)
+                    ydl.download(['https://www.youtube.com/watch?v=' + str(video_id)])
+                member.voice.channel.connect
+                channel = member.voice.channel
+                vc = await channel.connect()
+                vc.play(discord.FFmpegPCMAudio(source="./video0.mp3"))
+                while vc.is_playing():
+                    time.sleep(.1)
+                os.remove('./video0.mp3')
+            else:
+                ctx.send(f"silly {member.mention}, you must be in a voice channel to do this!")
+
+@bot.command
+async def stop(ctx):
+    print('this is a placholder for a future command to stop audio')
+
+
+@bot.command()
+async def ping(ctx):
+    ping_ = bot.latency
+    ping =  round(ping_ * 1000)
+    await ctx.send(f"my ping is {ping}ms")
+
     
 
 
