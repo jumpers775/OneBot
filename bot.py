@@ -368,7 +368,6 @@ async def search(ctx, *, arg):
 
 @bot.listen('on_message')
 async def on_message(message):
-    await bot.process_commands(message)
     if message.author.id != bot.user.id:
         channel = discord.utils.get(message.guild.text_channels, name="logs")
         await channel.send(f'`{message.channel}` : `{message.author}` : {message.content}')
