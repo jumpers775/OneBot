@@ -30,6 +30,7 @@ token = 'put token here'
 bot = commands.Bot(command_prefix = prefix, intents=intents, activity=discord.Game(name=f'{prefix}help'), help_command=None)
 @bot.event
 async def on_guild_join(guild):
+    await guild.create_text_channel('logs')
     muted = discord.utils.get(guild.roles, name="muted")
     if muted == None:
         await guild.create_role(name="muted")
@@ -363,8 +364,11 @@ async def search(ctx, *, arg):
                 ctx.send(f"silly {member.mention}, you must be in a voice channel to do this!")
         if str(reaction) == '\U0001f6d1':
             await ctx.send(f'{ctx.author.mention}, this request has been canceled.')
-
-
+#logs
+@bot.event()
+async def on_message(message):
+    channel = discord.utils.get(message.guild.text_channels, name="logs")
+    channel.send('`' + message.channel + '`:`' + message.author + '`' + message.content)
 
 
 @bot.command()
