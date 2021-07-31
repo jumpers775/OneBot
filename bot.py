@@ -25,7 +25,7 @@ intents.members = True
 intents.reactions = True
 
 prefix = '$'
-token = 'put token here'
+token = 'ODY1Mzk3NTM3NzYxMTMyNTQ1.YPDaQw.Bb0qEOWIy0sLCIZLne5u-ifjA6c'
 
 bot = commands.Bot(command_prefix = prefix, intents=intents, activity=discord.Game(name=f'{prefix}help'), help_command=None)
 @bot.event
@@ -365,10 +365,13 @@ async def search(ctx, *, arg):
         if str(reaction) == '\U0001f6d1':
             await ctx.send(f'{ctx.author.mention}, this request has been canceled.')
 #logs
-@bot.event()
+
+@bot.listen('on_message')
 async def on_message(message):
-    channel = discord.utils.get(message.guild.text_channels, name="logs")
-    channel.send('`' + message.channel + '`:`' + message.author + '`' + message.content)
+    await bot.process_commands(message)
+    if message.author.id != bot.user.id:
+        channel = discord.utils.get(message.guild.text_channels, name="logs")
+        await channel.send(f'`{message.channel}` : `{message.author}` : {message.content}')
 
 
 @bot.command()
