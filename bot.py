@@ -134,11 +134,8 @@ async def search(ctx, *, arg):
     id4 = videosResult['result'][3]['link'].replace('https://www.youtube.com/watch?v=', '')
     id5 = videosResult['result'][4]['link'].replace('https://www.youtube.com/watch?v=', '')
     video_ids = [id1,id2,id3,id4,id5]
-
-    # will convert above two lines to not break async in the future
     num = 0
     list = ''
-
     while num < 5:
         video = "https://www.youtube.com/watch?v=" + video_ids[num]
         ydl_opts = {}
@@ -163,7 +160,6 @@ async def search(ctx, *, arg):
     except asyncio.TimeoutError:
         await ctx.channel.send(f'{ctx.author.mention}, Your request has timed out.')
     else:
-        print(reaction)
         if str(reaction) == '1\N{variation selector-16}\N{combining enclosing keycap}':
             num = 0
             video = "https://www.youtube.com/watch?v=" + video_ids[num]
@@ -176,9 +172,7 @@ async def search(ctx, *, arg):
             await message.edit(content='Selected: \n `' + video_title + '`' + '\n*this may take a while to start as this feature is in beta*')
             member = ctx.guild.get_member(int(ctx.author.id))
             if member.voice.channel.id != None:
-                print(member.voice.channel.id)
                 vidnum = 0
-                print(path.exists('./video0.mp3'))
                 while path.exists(f'./video{vidnum}.mp3') == True:
                     vidnum += 1
                 
@@ -192,7 +186,6 @@ async def search(ctx, *, arg):
                     'outtmpl': f'./video{vidnum}.mp3'
                 }
                 with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                    print(video_id)
                     ydl.download(['https://www.youtube.com/watch?v=' + str(video_id)])
                 voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
                 if voice == None:
@@ -227,7 +220,9 @@ async def search(ctx, *, arg):
             await message.edit(content='Selected: \n `' + video_title + '`' + '\n*this may take a while to start as this feature is in beta*')
             member = ctx.guild.get_member(int(ctx.author.id))
             if member.voice.channel.id != None:
-                print(member.voice.channel.id)
+                vidnum = 0
+                while path.exists(f'./video{vidnum}.mp3') == True:
+                    vidnum += 1
                 ydl_opts = {
                     'format': 'bestaudio/best',
                     'postprocessors': [{
@@ -235,24 +230,29 @@ async def search(ctx, *, arg):
                         'preferredcodec': 'mp3',
                         'preferredquality': '192',
                     }],
-                    'outtmpl': './video0.mp3'
+                    'outtmpl': f'./video{vidnum}.mp3'
                 }
                 with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                    print(video_id)
                     ydl.download(['https://www.youtube.com/watch?v=' + str(video_id)])
-                channel = member.voice.channel
-                vc = await channel.connect()
-                audio = discord.FFmpegPCMAudio(source="./video0.mp3")
-                vc.play(audio)
-                while vc.is_playing():
-                    await asyncio.sleep(.1)
-                vc.stop()
                 voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-                if voice != None:
-                    await vc.disconnect(force=True)
-                audio.cleanup()
-                await asyncio.sleep(1)
-                os.remove('./video0.mp3')
+                if voice == None:
+                    channel = member.voice.channel
+                    vc = await channel.connect()
+                    audio = discord.FFmpegPCMAudio(source=f"./video{vidnum}.mp3")
+                    vc.play(audio)
+                    while vc.is_playing():
+                        await asyncio.sleep(.1)
+                    vc.stop()
+                    voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+                    if voice != None:
+                        await vc.disconnect(force=True)
+                    audio.cleanup()
+                    await asyncio.sleep(1)
+                    os.remove(f'./video{vidnum}.mp3')
+                else:
+                    await ctx.send('could not complete this request as im already in a voice channel')
+                    os.remove(f'./video{vidnum}.mp3')
+
             else:
                 ctx.send(f"silly {member.mention}, you must be in a voice channel to do this!")
         if str(reaction) == '3\N{variation selector-16}\N{combining enclosing keycap}':
@@ -267,7 +267,9 @@ async def search(ctx, *, arg):
             await message.edit(content='Selected: \n `' + video_title + '`' + '\n*this may take a while to start as this feature is in beta*')
             member = ctx.guild.get_member(int(ctx.author.id))
             if member.voice.channel.id != None:
-                print(member.voice.channel.id)
+                vidnum = 0
+                while path.exists(f'./video{vidnum}.mp3') == True:
+                    vidnum += 1
                 ydl_opts = {
                     'format': 'bestaudio/best',
                     'postprocessors': [{
@@ -275,24 +277,29 @@ async def search(ctx, *, arg):
                         'preferredcodec': 'mp3',
                         'preferredquality': '192',
                     }],
-                    'outtmpl': './video0.mp3'
+                    'outtmpl': f'./video{vidnum}.mp3'
                 }
                 with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                    print(video_id)
                     ydl.download(['https://www.youtube.com/watch?v=' + str(video_id)])
-                channel = member.voice.channel
-                vc = await channel.connect()
-                audio = discord.FFmpegPCMAudio(source="./video0.mp3")
-                vc.play(audio)
-                while vc.is_playing():
-                    await asyncio.sleep(.1)
-                vc.stop()
                 voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-                if voice != None:
-                    await vc.disconnect(force=True)
-                audio.cleanup()
-                await asyncio.sleep(1)
-                os.remove('./video0.mp3')
+                if voice == None:
+                    channel = member.voice.channel
+                    vc = await channel.connect()
+                    audio = discord.FFmpegPCMAudio(source=f"./video{vidnum}.mp3")
+                    vc.play(audio)
+                    while vc.is_playing():
+                        await asyncio.sleep(.1)
+                    vc.stop()
+                    voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+                    if voice != None:
+                        await vc.disconnect(force=True)
+                    audio.cleanup()
+                    await asyncio.sleep(1)
+                    os.remove(f'./video{vidnum}.mp3')
+                else:
+                    await ctx.send('could not complete this request as im already in a voice channel')
+                    os.remove(f'./video{vidnum}.mp3')
+
             else:
                 ctx.send(f"silly {member.mention}, you must be in a voice channel to do this!")
         if str(reaction) == '4\N{variation selector-16}\N{combining enclosing keycap}':
@@ -307,7 +314,9 @@ async def search(ctx, *, arg):
             await message.edit(content='Selected: \n `' + video_title + '`' + '\n*this may take a while to start as this feature is in beta*')
             member = ctx.guild.get_member(int(ctx.author.id))
             if member.voice.channel.id != None:
-                print(member.voice.channel.id)
+                vidnum = 0
+                while path.exists(f'./video{vidnum}.mp3') == True:
+                    vidnum += 1
                 ydl_opts = {
                     'format': 'bestaudio/best',
                     'postprocessors': [{
@@ -315,24 +324,29 @@ async def search(ctx, *, arg):
                         'preferredcodec': 'mp3',
                         'preferredquality': '192',
                     }],
-                    'outtmpl': './video0.mp3'
+                    'outtmpl': f'./video{vidnum}.mp3'
                 }
                 with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                    print(video_id)
                     ydl.download(['https://www.youtube.com/watch?v=' + str(video_id)])
-                channel = member.voice.channel
-                vc = await channel.connect()
-                audio = discord.FFmpegPCMAudio(source="./video0.mp3")
-                vc.play(audio)
-                while vc.is_playing():
-                    await asyncio.sleep(.1)
-                vc.stop()
                 voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-                if voice != None:
-                    await vc.disconnect(force=True)
-                audio.cleanup()
-                await asyncio.sleep(1)
-                os.remove('./video0.mp3')
+                if voice == None:
+                    channel = member.voice.channel
+                    vc = await channel.connect()
+                    audio = discord.FFmpegPCMAudio(source=f"./video{vidnum}.mp3")
+                    vc.play(audio)
+                    while vc.is_playing():
+                        await asyncio.sleep(.1)
+                    vc.stop()
+                    voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+                    if voice != None:
+                        await vc.disconnect(force=True)
+                    audio.cleanup()
+                    await asyncio.sleep(1)
+                    os.remove(f'./video{vidnum}.mp3')
+                else:
+                    await ctx.send('could not complete this request as im already in a voice channel')
+                    os.remove(f'./video{vidnum}.mp3')
+
             else:
                 ctx.send(f"silly {member.mention}, you must be in a voice channel to do this!")
         if str(reaction) == '5\N{variation selector-16}\N{combining enclosing keycap}':
@@ -347,7 +361,9 @@ async def search(ctx, *, arg):
             await message.edit(content='Selected: \n `' + video_title + '`' + '\n*this may take a while to start as this feature is in beta*')
             member = ctx.guild.get_member(int(ctx.author.id))
             if member.voice.channel.id != None:
-                print(member.voice.channel.id)
+                vidnum = 0
+                while path.exists(f'./video{vidnum}.mp3') == True:
+                    vidnum += 1
                 ydl_opts = {
                     'format': 'bestaudio/best',
                     'postprocessors': [{
@@ -355,38 +371,65 @@ async def search(ctx, *, arg):
                         'preferredcodec': 'mp3',
                         'preferredquality': '192',
                     }],
-                    'outtmpl': './video0.mp3'
+                    'outtmpl': f'./video{vidnum}.mp3'
                 }
                 with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                    print(video_id)
                     ydl.download(['https://www.youtube.com/watch?v=' + str(video_id)])
-                channel = member.voice.channel
-                vc = await channel.connect()
-                audio = discord.FFmpegPCMAudio(source="./video0.mp3")
-                vc.play(audio)
-                while vc.is_playing():
-                    await asyncio.sleep(.1)
-                vc.stop()
                 voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-                if voice != None:
-                    await vc.disconnect(force=True)
-                audio.cleanup()
-                await asyncio.sleep(1)
-                os.remove('./video0.mp3')
+                if voice == None:
+                    channel = member.voice.channel
+                    vc = await channel.connect()
+                    audio = discord.FFmpegPCMAudio(source=f"./video{vidnum}.mp3")
+                    vc.play(audio)
+                    while vc.is_playing():
+                        await asyncio.sleep(.1)
+                    vc.stop()
+                    voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+                    if voice != None:
+                        await vc.disconnect(force=True)
+                    audio.cleanup()
+                    await asyncio.sleep(1)
+                    os.remove(f'./video{vidnum}.mp3')
+                else:
+                    await ctx.send('could not complete this request as im already in a voice channel')
+                    os.remove(f'./video{vidnum}.mp3')
+
             else:
-                await ctx.send(f"silly {member.mention}, you must be in a voice channel to do this!")
+                ctx.send(f"silly {member.mention}, you must be in a voice channel to do this!")
         if str(reaction) == '\U0001f6d1':
             await ctx.send(f'{ctx.author.mention}, this request has been canceled.')
 #logs
+
+async def download(url, name):
+  async with aiohttp.ClientSession() as session:
+      async with session.get(url) as response:
+         data = await response.content.read()
+         with open(name, "wb") as f:
+               f.write(data)
+
 
 @bot.listen('on_message')
 async def on_message(message):
     if message.author.id != bot.user.id:
         channel = discord.utils.get(message.guild.text_channels, name="logs")
-        await channel.send(f'`{message.channel}` : `{message.author}` : {message.content}')
+        if message.attachments == []:
+            await channel.send(f'`{message.channel}` : `{message.author}` : {message.content}')
+        else:
+            url = str(message.attachments[0])
+            names = 1
+            name = url[url.rindex('.')+1:]
+            file = ''
+            while path.exists(f'./{names}.{name}') == True:
+                names += 1
+            file = f'{str(names)}.{name}'
+            await download(url, file)
+            await channel.send(f'`{message.channel}` : `{message.author}` : {message.content}', file=discord.File(f'./{file}'))
+            os.remove(f'./{file}')
 
-@bot.event('on_ready')
-async def startup():
+
+
+@bot.event
+async def on_ready():
     print(f'{bot.user.name} has started up')
     vidnum = 0
     while path.exists(f'./video{vidnum}.mp3') == True:
