@@ -25,12 +25,10 @@ from os import path
 intents = discord.Intents.default()
 intents.members = True
 intents.reactions = True
-
 prefix = '$'
 token = 'put token here'
-
 bot = commands.Bot(command_prefix = prefix, intents=intents, activity=discord.Game(name=f'{prefix}help'), help_command=None)
-
+bot.queue = {}
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.5):
         super().__init__(source, volume)
@@ -188,7 +186,7 @@ async def search(ctx, *, arg):
     list = ''
     embed=discord.Embed(
         title="Results",
-        description="Heres what we found:",
+        description="Heres what I found:",
         color=discord.Color.dark_gold())
     while num < 5:
         video = "https://www.youtube.com/watch?v=" + video_ids[num]
@@ -227,48 +225,48 @@ async def search(ctx, *, arg):
                 video_title = info_dict.get('title', None)
             await message.edit(embed=embed, content='')
             member = ctx.guild.get_member(int(ctx.author.id))
-            if member.voice.channel.id != None:
+            if ctx.author.voice.channel.id != None:
                 embed=discord.Embed(
                     title="Selected:",
                     description=f"{video_title}",
                     color=discord.Color.dark_gold())
-                embed.add_field(name=f'status', value=f"Playing...", inline=False)
+                embed.add_field(name=f'status', value=f"queued", inline=False)
                 await message.edit(embed=embed)
+                if ctx.guild.id not in bot.queue:
+                    vid = []
+                    bot.queue[ctx.guild.id] = vid
+                video_url = f'https://www.youtube.com/watch?v={video_id}'  
+                lists = bot.queue[ctx.guild.id]
+                lists.append(video_url)
                 voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-                if voice == None:
-                    channel = member.voice.channel
+                channel = ctx.author.voice.channel
+                musician = discord.utils.get(ctx.guild.roles,name="musician")
+                await ctx.author.add_roles(musician)
+                if video_url == lists[0]:
                     vc = await channel.connect()
-                    video_url = f'https://www.youtube.com/watch?v={video_id}'
-                    audio = await YTDLSource.from_url(video_url, loop=ctx.bot.loop, stream=True)
-                    musician = discord.utils.get(ctx.guild.roles,name="musician")
-                    await ctx.author.add_roles(musician)
-                    vc.play(audio)
-                    while vc.is_playing():
-                        await asyncio.sleep(.1)
+                    while 0 <= 0 < len(lists) == True:
+                        videolink = lists[0]
+                        audio = await YTDLSource.from_url(videolink, loop=bot.loop, stream=True)
+                        vc.play(audio)
+                        while vc.is_playing():
+                            await asyncio.sleep(.1)
+                        lists.pop(0)
                     vc.stop()
                     voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
                     if voice != None:
                         await vc.disconnect(force=True)
-                    audio.cleanup()
-                    embed=discord.Embed(
-                        title="Selected:",
-                        description=f"{video_title}",
-                        color=discord.Color.dark_gold())
-                    embed.add_field(name=f'status', value=f"playback ended", inline=False)
                     await ctx.author.remove_roles(musician)
-                    await message.edit(embed=embed)
-                else:
-                    await ctx.reply('could not complete this request as im already in a voice channel')
-                    embed=discord.Embed(
-                        title="Selected:",
-                        description=f"{video_title}",
-                        color=discord.Color.dark_gold())
-                    embed.add_field(name=f'status', value=f"playback ended", inline=False)
-                    await message.edit(embed=embed)
+                    audio.cleanup()                
             else:
-                await ctx.reply(f"silly {member.mention}, you must be in a voice channel to do this!")
-    if str(reaction) == '\U0001f6d1':
-        await ctx.reply('This request has been canceled.')
+                await ctx.reply('could not complete this request as im already in a voice channel')
+                embed=discord.Embed(
+                    title="Selected:",
+                    description=f"{video_title}",
+                    color=discord.Color.dark_gold())
+                embed.add_field(name=f'status', value=f"playback ended", inline=False)
+                await message.edit(embed=embed)
+        if str(reaction) == '\U0001f6d1':
+            await ctx.reply('This request has been canceled.')
 
 async def download(url, name):
   async with aiohttp.ClientSession() as session:
