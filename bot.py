@@ -9,14 +9,10 @@ from aiohttp import payload
 import discord
 import youtube_dl
 import json
-import urllib
-import simplejson
 import re
 import time
-import lxml
 import ffmpeg
 from youtubesearchpython.__future__ import VideosSearch
-from lxml import etree
 from discord import message
 from discord.flags import Intents
 from discord.ext import commands
