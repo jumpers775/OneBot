@@ -22,15 +22,14 @@ intents = discord.Intents.default()
 intents.members = True
 intents.reactions = True
 prefix = '$'
-token = 'put token here'
+token = 'Put Token here'
 bot = commands.Bot(command_prefix = prefix, intents=intents, activity=discord.Game(name=f'{prefix}help'), help_command=None)
 bot.queue = {}
+
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.5):
         super().__init__(source, volume)
-
         self.data = data
-
         self.title = data.get('title')
         self.url = data.get('url')
 
@@ -157,6 +156,7 @@ async def stop(ctx):
         if musician in ctx.author.roles or ctx.author.guild_permissions.administrator == True or DJ in ctx.author.roles: 
             if musician in ctx.author.roles:
                 await ctx.author.remove_roles(musician)
+            bot.queue[ctx.guild.id] = []
             await voice.disconnect(force=True)
             await ctx.reply('stopped')
         else:
