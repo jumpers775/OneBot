@@ -2,6 +2,7 @@
 import asyncio
 from logging import error
 import os
+from dotenv import dotenv_values
 import random
 import itertools
 import aiohttp
@@ -10,14 +11,12 @@ import discord
 import youtube_dl
 import json
 import urllib
-import simplejson
 import re
 import time
-import lxml
 import ffmpeg
 from youtubesearchpython.__future__ import VideosSearch
-from lxml import etree
 from discord import message
+from dotenv import load_dotenv
 from discord.flags import Intents
 from discord.ext import commands
 import os.path
@@ -26,9 +25,17 @@ intents = discord.Intents.default()
 intents.members = True
 intents.reactions = True
 prefix = '$'
-token = 'put token here'
 bot = commands.Bot(command_prefix = prefix, intents=intents, activity=discord.Game(name=f'{prefix}help'), help_command=None)
 bot.queue = {}
+def startcheck():
+    if path.exists("./.env") == False:
+        env = open('./.env', 'w')
+        t = input("Please input your bot token:")
+        print(f"The Token {t} has been set. to change this edit the .env file in this directory")
+        env.write(f"token={t}")
+startcheck()
+load_dotenv()
+token = os.environ['token'] 
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.5):
         super().__init__(source, volume)
