@@ -37,12 +37,10 @@ def startcheck():
         t = input("Please input your bot token:")
         print(f"The Token {t} has been set. to change this edit the .env file in this directory")
         env.write(f"token={t}")
-        env.write('xp={}')
     if path.exists("./xp.json ") == False:
         exp = {}
         with open("xp.json", "w") as write_file:
             json.dump(exp, write_file, indent=4)  
-
 startcheck()
 load_dotenv()
 token = os.environ['token']
@@ -96,11 +94,11 @@ async def on_guild_join(guild):
         await guild.create_role(name="DJ")
     with open('xp.json', 'r+') as f:
         data = json.load(f)
-        if str(guild.id) not in data:
+        if guild.id not in data:
             data[guild.id] = {}
         for member in guild.members:
             if member.id != bot.user.id:
-                guilddata = data[str(guild.id)]
+                guilddata = data[guild.id]
                 if str(member.id) not in guilddata:
                     data[guild.id][member.id] = 0
         f.seek(0)
@@ -299,8 +297,6 @@ async def download(url, name):
          data = await response.content.read()
          with open(name, "wb") as f:
                f.write(data)
-
-
 @bot.listen('on_message')
 async def on_message(message):
     if message.author.id != bot.user.id:
@@ -335,6 +331,23 @@ async def on_message(message):
                     role = discord.utils.get(message.guild.roles, name=str(rolename))
                 member = message.guild.get_member(message.author.id)
                 await member.add_roles(role)
+            else:
+                num = 9
+                numb = data[str(message.author.guild.id)][str(message.author.id)] 
+                while num > 0:
+                    remainder = numb % 20
+                    is_divisible = remainder == 0
+                    role = discord.utils.get(message.guild.roles, name=f"level {remainder + 1}")
+                    if is_divisible == True and role not in message.author.roles:
+                        rolename = f"level {remainder + 1}"
+                        await message.channel.send(f'Congrats {message.author.mention} on level {remainder + 1}!')
+                        role = discord.utils.get(message.guild.roles, name=str(rolename))
+                        if role == None:
+                            await message.guild.create_role(name=str(rolename))
+                            role = discord.utils.get(message.guild.roles, name=str(rolename))
+                        member = message.guild.get_member(message.author.id)
+                        await member.add_roles(role)
+
             f.seek(0)
             json.dump(data, f, indent=4)
 @bot.listen('on_member_join')
@@ -352,15 +365,11 @@ async def on_member_join(member):
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} has started up')
-
-
 @bot.command()
 async def ping(ctx):
     ping_ = bot.latency
     ping =  round(ping_ * 1000)
     await ctx.reply(f"my ping is {ping}ms")
-
-    
 @bot.command()
 async def setxp(ctx, arg,arg2):
     numeric_filter = filter(str.isdigit, arg)
