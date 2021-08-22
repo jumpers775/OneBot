@@ -42,12 +42,7 @@ def startcheck():
         exp = {}
         with open("xp.json", "w") as write_file:
             json.dump(exp, write_file, indent=4)  
-    required = {'aiohttp', 'discord', 'youtube_dl', 'ffmpeg', 'youtube-search-python', 'PyNaCl'}
-    installed = {pkg.key for pkg in pkg_resources.working_set}
-    missing = required - installed 
-    if missing:
-        python = sys.executable
-        subprocess.check_call([python, '-m', 'pip', 'install', *missing], stdout=subprocess.DEVNULL)
+
 startcheck()
 load_dotenv()
 token = os.environ['token']
