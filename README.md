@@ -1,5 +1,5 @@
 # onebot
-Simple moderation discord bot
+Simple moderation discord bot // This project is now depricated. Discord.py will no longer receive updates so this bot will not be able to run in the near future.
 
 All that is required for use is adding a token from your own botto the token variable in the bot.py file, and enabling member intents on the dashboard. 
 use $help for a list of commands (replace $ with your chosen prefix). The bots role must be set above all of the non-mod roles, and it requires admin to make and manage roles/channels.
