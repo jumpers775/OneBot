@@ -12,6 +12,7 @@ import youtube_dl
 import json
 import urllib
 import re
+import json
 import time
 import ffmpeg
 from youtubesearchpython.__future__ import VideosSearch
@@ -21,6 +22,9 @@ from discord.flags import Intents
 from discord.ext import commands
 import os.path
 from os import path
+import sys
+import subprocess
+import pkg_resources
 intents = discord.Intents.default()
 intents.members = True
 intents.reactions = True
@@ -33,18 +37,19 @@ def startcheck():
         t = input("Please input your bot token:")
         print(f"The Token {t} has been set. to change this edit the .env file in this directory")
         env.write(f"token={t}")
+    if path.exists("./xp.json ") == False:
+        exp = {}
+        with open("xp.json", "w") as write_file:
+            json.dump(exp, write_file, indent=4)  
 startcheck()
 load_dotenv()
-token = os.environ['token'] 
+token = os.environ['token']
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.5):
         super().__init__(source, volume)
-
         self.data = data
-
         self.title = data.get('title')
         self.url = data.get('url')
-
     @classmethod
     async def from_url(cls, url, *, loop=None, stream=False):
         ydl_opts = {
@@ -72,6 +77,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
 @bot.event
 async def on_guild_join(guild):
+    print(f"guild {guild} has been joined.")
     await guild.create_text_channel('logs')
     whitelisted = discord.utils.get(guild.roles, name="whitelisted")
     everyone = discord.utils.get(guild.roles, name="everyone")
@@ -115,9 +121,19 @@ async def on_guild_join(guild):
     DJ = discord.utils.get(guild.roles, name="DJ")
     if DJ == None:
         await guild.create_role(name="DJ")
+    with open('xp.json', 'r+') as f:
+        data = json.load(f)
+        if guild.id not in data:
+            data[guild.id] = {}
+        for member in guild.members:
+            if member.id != bot.user.id:
+                guilddata = data[guild.id]
+                if str(member.id) not in guilddata:
+                    data[guild.id][member.id] = 0
+        f.seek(0)
+        json.dump(data, f, indent=4)
     print(f'initial setup complete for {guild}')
     return
-
 @bot.command()
 @commands.has_permissions(administrator = True)
 async def mute(ctx, arg):
@@ -128,7 +144,6 @@ async def mute(ctx, arg):
     member = ctx.guild.get_member(int(numeric_string))
     await member.add_roles(mute)
     await ctx.channel.send(f'{member.mention} has been muted.')
-
 @bot.command()
 @commands.has_permissions(administrator = True)
 async def unmute(ctx, arg):
@@ -311,8 +326,6 @@ async def download(url, name):
          data = await response.content.read()
          with open(name, "wb") as f:
                f.write(data)
-
-
 @bot.listen('on_message')
 async def on_message(message):
     if message.author.id != bot.user.id:
@@ -330,33 +343,90 @@ async def on_message(message):
             await download(url, file)
             await channel.send(f'`{message.channel}` : `{message.author}` : {message.content}', file=discord.File(f'./{file}'))
             os.remove(f'./{file}')
+@bot.listen('on_message')
+async def on_message(message):
+    if message.author.id != bot.user.id:
+        with open('xp.json', 'r+') as f:
+            data = json.load(f) 
+            data[str(message.author.guild.id)][str(message.author.id)] += 1
+            remainder = data[str(message.author.guild.id)][str(message.author.id)] % 20
+            is_divisible = remainder == 0
+            if is_divisible == True:
+                rolename = f"level {remainder + 1}"
+                await message.channel.send(f'Congrats {message.author.mention} on level {remainder + 1}!')
+                role = discord.utils.get(message.guild.roles, name=str(rolename))
+                if role == None:
+                    await message.guild.create_role(name=str(rolename))
+                    role = discord.utils.get(message.guild.roles, name=str(rolename))
+                member = message.guild.get_member(message.author.id)
+                await member.add_roles(role)
+            else:
+                num = 9
+                numb = data[str(message.author.guild.id)][str(message.author.id)] 
+                while num > 0:
+                    remainder = numb % 20
+                    is_divisible = remainder == 0
+                    role = discord.utils.get(message.guild.roles, name=f"level {remainder + 1}")
+                    if is_divisible == True and role not in message.author.roles:
+                        rolename = f"level {remainder + 1}"
+                        await message.channel.send(f'Congrats {message.author.mention} on level {remainder + 1}!')
+                        role = discord.utils.get(message.guild.roles, name=str(rolename))
+                        if role == None:
+                            await message.guild.create_role(name=str(rolename))
+                            role = discord.utils.get(message.guild.roles, name=str(rolename))
+                        member = message.guild.get_member(message.author.id)
+                        await member.add_roles(role)
 
-
-
+            f.seek(0)
+            json.dump(data, f, indent=4)
+@bot.listen('on_member_join')
+async def on_member_join(member):
+    print(f"{member} has joined {member.guild}")
+    channel = discord.utils.get(member.guild.text_channels, name="welcome")
+    await channel.send(f"Welcome, {member.mention} to {member.guild}!")
+    with open('xp.json', 'r+') as f:
+        data = json.load(f)
+        guilddata = data[str(member.guild.id)]
+        if str(member.id) not in guilddata:
+            data[str(member.guild.id)][str(member.id)] = 0
+        f.seek(0)
+        json.dump(data, f, indent=4)
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} has started up')
-@bot.event
-async def on_user_join():
-
-
 @bot.command()
 async def ping(ctx):
     ping_ = bot.latency
     ping =  round(ping_ * 1000)
     await ctx.reply(f"my ping is {ping}ms")
-
 @bot.command()
-@commands.has_permissions(administrator = True)
-async def whitelist(ctx, member: discord.Member):
-    print(f'command whitelist used by {ctx.author} on the user {member}')
-    whitelisted = discord.utils.get(ctx.guild.roles,name="whitelisted")
-    await member.add_roles(whitelisted)
-    ctx.reply(f'user {member.mention} has been whitelisted.')
-
-    
-
-
+async def setxp(ctx, arg,arg2):
+    numeric_filter = filter(str.isdigit, arg)
+    numeric_string = "".join(numeric_filter)
+    member = ctx.guild.get_member(int(numeric_string))
+    with open('xp.json', 'r+') as f:
+        data = json.load(f)
+        data[str(ctx.guild.id)][str(member.id)] = int(arg2)
+        f.seek(0)
+        json.dump(data, f, indent=4)
+    await ctx.reply(f"{member.mention}'s XP has been set to {arg2}")
+@bot.command()
+async def stats(ctx, arg=None):
+    if arg == None:
+        arg = ctx.author.id
+    else:
+        numeric_filter = filter(str.isdigit, arg)
+        arg = "".join(numeric_filter)
+    member = ctx.guild.get_member(arg)
+    with open('xp.json', 'r+') as f:
+        data = json.load(f)
+        num = data[str(ctx.guild.id)][str(arg)]
+        embed=discord.Embed(
+        title="Stats:",
+            description=f"{member}'s stats:",
+            color=discord.Color.blurple())
+        embed.add_field(name=f'XP:', value=f"*{num}*", inline=False)
+        await ctx.reply(embed=embed)       
 @bot.command()
 async def help(ctx):
     print(f'user {ctx.author} used command help')
