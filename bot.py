@@ -73,6 +73,36 @@ class YTDLSource(discord.PCMVolumeTransformer):
 @bot.event
 async def on_guild_join(guild):
     await guild.create_text_channel('logs')
+    whitelisted = discord.utils.get(guild.roles, name="whitelisted")
+    everyone = discord.utils.get(guild.roles, name="everyone")
+    p = 0
+    for channel in guild.channels:
+        if p < 0:
+            p += 1
+            f = channel.send('would you like to enable whitelisting?')
+            f
+            reacts = '\N{THUMBS UP SIGN}'
+            await message.add_reaction(reacts)
+            reacts = '\N{THUMBS DOWN SIGN}'
+            await message.add_reaction(reacts)
+            def check(reaction, user):
+                x = False
+                if user.server_permissions.administrator:
+                    x = True
+                return x
+            try:
+                reaction, user = await bot.wait_for('reaction_add', timeout=120.0, check=check)
+            except asyncio.TimeoutError:
+                await f.reply('Timed out, disabling')
+            else:
+                if str(reaction) != '\N{THUMBS UP SIGN}':
+                    if whitelisted == None:
+                        await guild.create_role(name="whitelisted")
+                    for channel in guild.channels:
+                        if channel.name != 'rules' or channel.name != 'Rules' or channel.name != 'Welcome' or channel.name != 'welcome':
+                            await channel.set_permissions(everyone, speak=False, send_messages=False, read_message_history=True, read_messages=False)
+                if str(reaction) != '\N{THUMBS DOWN SIGN}':
+                    return
     muted = discord.utils.get(guild.roles, name="muted")
     if muted == None:
         await guild.create_role(name="muted")
@@ -306,6 +336,8 @@ async def on_message(message):
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} has started up')
+@bot.event
+async def on_user_join():
 
 
 @bot.command()
@@ -313,6 +345,14 @@ async def ping(ctx):
     ping_ = bot.latency
     ping =  round(ping_ * 1000)
     await ctx.reply(f"my ping is {ping}ms")
+
+@bot.command()
+@commands.has_permissions(administrator = True)
+async def whitelist(ctx, member: discord.Member):
+    print(f'command whitelist used by {ctx.author} on the user {member}')
+    whitelisted = discord.utils.get(ctx.guild.roles,name="whitelisted")
+    await member.add_roles(whitelisted)
+    ctx.reply(f'user {member.mention} has been whitelisted.')
 
     
 
