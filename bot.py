@@ -79,7 +79,36 @@ class YTDLSource(discord.PCMVolumeTransformer):
 async def on_guild_join(guild):
     print(f"guild {guild} has been joined.")
     await guild.create_text_channel('logs')
-    await guild.create_text_channel('welcome')
+    whitelisted = discord.utils.get(guild.roles, name="whitelisted")
+    everyone = discord.utils.get(guild.roles, name="everyone")
+    p = 0
+    for channel in guild.channels:
+        if p < 0:
+            p += 1
+            f = channel.send('would you like to enable whitelisting?')
+            f
+            reacts = '\N{THUMBS UP SIGN}'
+            await message.add_reaction(reacts)
+            reacts = '\N{THUMBS DOWN SIGN}'
+            await message.add_reaction(reacts)
+            def check(reaction, user):
+                x = False
+                if user.server_permissions.administrator:
+                    x = True
+                return x
+            try:
+                reaction, user = await bot.wait_for('reaction_add', timeout=120.0, check=check)
+            except asyncio.TimeoutError:
+                await f.reply('Timed out, disabling')
+            else:
+                if str(reaction) != '\N{THUMBS UP SIGN}':
+                    if whitelisted == None:
+                        await guild.create_role(name="whitelisted")
+                    for channel in guild.channels:
+                        if channel.name != 'rules' or channel.name != 'Rules' or channel.name != 'Welcome' or channel.name != 'welcome':
+                            await channel.set_permissions(everyone, speak=False, send_messages=False, read_message_history=True, read_messages=False)
+                if str(reaction) != '\N{THUMBS DOWN SIGN}':
+                    return
     muted = discord.utils.get(guild.roles, name="muted")
     if muted == None:
         await guild.create_role(name="muted")
