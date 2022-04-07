@@ -9,6 +9,10 @@ import os
 from discord.ext.commands import Greedy
 import typing
 from discord.ext.commands import Context
+if not os.path.exists('.env'):
+    x = input('What is your token?\n')
+    with open('.env', 'w') as f:
+        f.write('token = ' + x)
 load_dotenv()
 token = os.environ['token']
 intents = discord.Intents.default()
@@ -16,10 +20,6 @@ intents.message_content = True
 intents.members = True
 intents.reactions = True
 bot = commands.Bot(command_prefix = '$',intents=intents, activity=discord.Game(name='Elden Ring'))
-if not os.path.exists('.env'):
-    x = input('What is your token?\n')
-    with open('.env', 'w') as f:
-        f.write('token = ' + x)
 if not os.path.isdir('./Files'):
     os.mkdir('./Files')
 @bot.event
@@ -60,6 +60,8 @@ async def sync(ctx: Context, guilds: Greedy[discord.Object], spec: typing.Option
             fmt += 1
 
     await ctx.send(f"Synced the tree to {fmt}/{len(guilds)} guilds.")@commands.is_owner()
+
+
 @discord.app_commands.checks.has_permissions(administrator=True)
 @app_commands.command(name='mute', description='Mutes a user.')
 async def mute(interaction: discord.Interaction, member: discord.Member, reason: str):
@@ -76,6 +78,8 @@ async def mute(interaction: discord.Interaction, member: discord.Member, reason:
                 await interaction.response.send_message(f'{member.mention} has been muted for {reason}.')
             else:
                 await interaction.response.send_message(f'{member.mention} has already been muted.')
+
+
 @mute.autocomplete('reason')
 async def mute_autocomplete(
     interaction: discord.Interaction,
@@ -87,6 +91,10 @@ async def mute_autocomplete(
         for mute in mutes if current.lower() in mute.lower()
     ]
 bot.tree.add_command(mute)
+@mute.error
+async def mute_error(interaction: discord.Interaction, error: Exception):
+    await interaction.response.send_message('admin privilages are required to use this command.', ephemeral=True)
+
 @discord.app_commands.checks.has_permissions(administrator=True)
 @app_commands.command(name='unmute', description='unmutes a user.')
 async def unmute(interaction: discord.Interaction, member: discord.Member):
@@ -103,6 +111,12 @@ async def unmute(interaction: discord.Interaction, member: discord.Member):
             else:
                 await interaction.response.send_message(f'{member.mention} is not muted.')
 bot.tree.add_command(unmute)
+@unmute.error
+async def unmute_error(interaction: discord.Interaction, error: Exception):
+    await interaction.response.send_message('admin privilages are required to use this command.', ephemeral=True)
+
+
+
 @discord.app_commands.checks.has_permissions(administrator=True)
 @app_commands.command(name='setmuterole', description='Sets the mute role.')
 async def setmuterole(interaction: discord.Interaction, role: discord.Role):
@@ -113,11 +127,15 @@ async def setmuterole(interaction: discord.Interaction, role: discord.Role):
             json.dump(x, f)
     await interaction.response.send_message(f'Mute Role has been set to {role.name}')
 bot.tree.add_command(setmuterole)
+@setmuterole.error
+async def setmuterole_error(interaction: discord.Interaction, error: Exception):
+    await interaction.response.send_message('admin privilages are required to use this command.', ephemeral=True)
 
 @app_commands.command(name='ping', description='Gets the bots ping')
 async def ping(interaction: discord.Interaction):
     await interaction.response.send_message(f'Bots ping is {round(bot.latency, 2)}ms', ephemeral=True)
 bot.tree.add_command(ping)
+
 
 @app_commands.command(name='help', description='Help command.')
 async def help(interaction: discord.Interaction):
