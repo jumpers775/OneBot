@@ -1,2 +1,4 @@
 *.env
 *.json
+__pycache__
+Files/
