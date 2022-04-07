@@ -129,12 +129,6 @@ async def help(interaction: discord.Interaction):
     embed.add_field(name=f'/mute <user> <reason>', value="mutes a user. **must have admin perms**", inline=False)
     embed.add_field(name=f"/unmute <user>", value="unmutes a user. **must have admin perms**", inline=False)
     embed.add_field(name=f"/help ", value="displays this page", inline=False)
-    #embed.add_field(name=f"/purge <number>", value="purges the last messages from a channel **must have manage message perms**", inline=False)
-    #embed.add_field(name=f"/kick <user>", value="kicks a user **must have kick perms**", inline=False)
-    #embed.add_field(name=f"/ban <user> <reason>", value="bans a user for the specified reason. **must have ban perms**", inline=False)
-    #embed.add_field(name=f"/unban <user>", value="unbans a user. **must have ban perms**", inline=False)
-    #embed.add_field(name=f"/search <search terms>", value="allows a user to search youtube and play music", inline=False)
-    #embed.add_field(name=f"/stop", value="stops audio play from the bot", inline=False)
     await interaction.response.send_message(embed=embed, ephemeral=True)
 bot.tree.add_command(help)
 
