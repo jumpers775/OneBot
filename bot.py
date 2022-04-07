@@ -72,7 +72,6 @@ async def mute(interaction: discord.Interaction, member: discord.Member, reason:
             await interaction.response.send_message(f'No mute role set.')
         else:
             mute = discord.utils.get(interaction.guild.roles, id=x['MuteRole']) 
-            print(member.roles, mute)
             if mute not in member.roles:
                 await member.add_roles(mute)
                 await interaction.response.send_message(f'{member.mention} has been muted for {reason}.')
