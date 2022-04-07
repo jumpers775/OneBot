@@ -1,3 +1,4 @@
+Version = '3.0.0b1'
 import os
 import discord
 import json
@@ -135,6 +136,10 @@ async def ping(interaction: discord.Interaction):
     await interaction.response.send_message(f'Bots ping is {round(bot.latency, 2)}ms', ephemeral=True)
 bot.tree.add_command(ping)
 
+@app_commands.command(name='version', description='Bot version info.')
+async def ver(interaction: discord.Interaction):
+    await interaction.response.send_message(f'I am {bot.user.name} version {Version}.\nMy source code can be found at https://github.com/jumpers775/OneBot/releases/tag/{Version}', ephemeral=True)
+bot.tree.add_command(ver)
 
 @app_commands.command(name='help', description='Help command.')
 async def help(interaction: discord.Interaction):
