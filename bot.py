@@ -1,15 +1,24 @@
-Version = '3.0.0b1'
+Version = '3.0.0b2'
 import os
 import discord
-import json
+import aiohttp
 import json
 from dotenv import load_dotenv
 from discord.ext import commands
 from discord import app_commands
 import os
+import datetime
 from discord.ext.commands import Greedy
 import typing
 from discord.ext.commands import Context
+starttime = datetime.datetime.now()
+async def checkurl(url: str):
+    try:
+       async with aiohttp.ClientSession() as session:
+           async with session.get(url) as resp:
+               return resp.status == 200
+    except:
+        return False
 if not os.path.exists('.env'):
     x = input('What is your token?\n')
     with open('.env', 'w') as f:
@@ -74,11 +83,13 @@ async def mute(interaction: discord.Interaction, member: discord.Member, reason:
         else:
             mute = discord.utils.get(interaction.guild.roles, id=x['MuteRole']) 
             if mute not in member.roles:
-                await member.add_roles(mute)
-                await interaction.response.send_message(f'{member.mention} has been muted for {reason}.')
+                try:
+                    await member.add_roles(mute)
+                    await interaction.response.send_message(f'{member.mention} has been muted for {reason}.')
+                except discord.Forbidden:
+                    await interaction.response.send_message(f'I do not have permission to mute {member.mention}.')
             else:
                 await interaction.response.send_message(f'{member.mention} has already been muted.')
-
 
 @mute.autocomplete('reason')
 async def mute_autocomplete(
@@ -93,7 +104,14 @@ async def mute_autocomplete(
 bot.tree.add_command(mute)
 @mute.error
 async def mute_error(interaction: discord.Interaction, error: Exception):
-    await interaction.response.send_message('admin privilages are required to use this command.', ephemeral=True)
+    with open(f'./Files/{interaction.guild.id}.json', 'r') as f:
+        x = json.load(f)
+        mute = discord.utils.get(interaction.guild.roles, id=x['MuteRole'])
+        if mute == None:
+            await interaction.response.send_message(f'Mute role invalid.', ephemeral=True)
+        else:
+            await interaction.response.send_message('admin privileges are required to use this command.', ephemeral=True)
+
 
 @discord.app_commands.checks.has_permissions(administrator=True)
 @app_commands.command(name='unmute', description='unmutes a user.')
@@ -104,17 +122,63 @@ async def unmute(interaction: discord.Interaction, member: discord.Member):
         if x['MuteRole'] == False:
             await interaction.response.send_message(f'No mute role set.')
         else:
-            mute = discord.utils.get(interaction.guild.roles, id=x['MuteRole']) 
+            try:
+                mute = discord.utils.get(interaction.guild.roles, id=x['MuteRole'])
+            except:
+                await interaction.response.send_message('Mute role invalid.') 
             if mute in member.roles:
-                await member.remove_roles(mute)
-                await interaction.response.send_message(f'{member.mention} has been unmuted.')
+                try:
+                    await member.remove_roles(mute)
+                    await interaction.response.send_message(f'{member.mention} has been unmuted.')
+                except discord.Forbidden:
+                    await interaction.response.send_message(f'I do not have permission to unmute {member.mention}.')
             else:
                 await interaction.response.send_message(f'{member.mention} is not muted.')
 bot.tree.add_command(unmute)
 @unmute.error
 async def unmute_error(interaction: discord.Interaction, error: Exception):
-    await interaction.response.send_message('admin privilages are required to use this command.', ephemeral=True)
+    with open(f'./Files/{interaction.guild.id}.json', 'r') as f:
+        x = json.load(f)
+        mute = discord.utils.get(interaction.guild.roles, id=x['MuteRole'])
+        if mute == None:
+            await interaction.response.send_message(f'Mute role invalid.', ephemeral=True)
+        else:
+            await interaction.response.send_message('admin privileges are required to use this command.', ephemeral=True)
 
+@discord.app_commands.checks.has_permissions(administrator=True)
+@app_commands.command(name='createmuterole', description='creates the mute role.')
+async def createmuterole(interaction: discord.Interaction, role: str):
+    await interaction.guild.create_role(name=role)
+    role = discord.utils.get(interaction.guild.roles, name=role)
+    for channel in interaction.guild.channels:
+        await channel.set_permissions(
+            role,
+            send_messages=False,
+            add_reactions=False,
+            speak=False,
+        )
+    with open(f'./Files/{interaction.guild.id}.json', 'r') as f:
+        x = json.load(f)
+        x['MuteRole'] = role.id
+        with open(f'./Files/{interaction.guild.id}.json', 'w') as f:
+            json.dump(x, f)
+    await interaction.response.send_message(f'Mute role created and set to {role.mention}.')
+
+@createmuterole.error
+async def setmuterole_error(interaction: discord.Interaction, error: Exception):
+    await interaction.response.send_message('admin privilages are required to use this command.', ephemeral=True)
+bot.tree.add_command(createmuterole)
+
+
+@app_commands.command(name='uptime', description='check how long the bot has been online.')
+async def uptime(interaction: discord.Interaction):
+    time = datetime.datetime.now() - starttime
+    p = str(time).split('.')[0].split(':')
+    x = f'{f"{str(int(p[2]))} Seconds" if int(p[2]) != 0 else ""}'
+    y = f'{f"{str(int(p[1]))} Minutes," if int(p[1]) != 0 else ""}'
+    z = f'{f"{str(int(p[0]))} Hours," if int(p[0]) != 0 else ""}'
+    await interaction.response.send_message('Uptime:\n' + z + y + x, ephemeral=True)
+bot.tree.add_command(uptime)
 
 
 @discord.app_commands.checks.has_permissions(administrator=True)
@@ -138,7 +202,7 @@ bot.tree.add_command(ping)
 
 @app_commands.command(name='version', description='Bot version info.')
 async def ver(interaction: discord.Interaction):
-    await interaction.response.send_message(f'I am {bot.user.name} version {Version}.\nMy source code can be found at https://github.com/jumpers775/OneBot/releases/tag/{Version}', ephemeral=True)
+    await interaction.response.send_message(f'I am {bot.user.name} version {Version}.\nMy source code can be found at {f"https://github.com/jumpers775/OneBot/releases/tag/{Version}" if  await checkurl(f"https://github.com/jumpers775/OneBot/releases/tag/{Version}") else "https://github.com/jumpers775/OneBot"}', ephemeral=True, suppress_embeds=True)
 bot.tree.add_command(ver)
 
 @app_commands.command(name='help', description='Help command.')
@@ -151,6 +215,7 @@ async def help(interaction: discord.Interaction):
     embed.add_field(name=f'/mute <user> <reason>', value="mutes a user. **must have admin perms**", inline=False)
     embed.add_field(name=f"/unmute <user>", value="unmutes a user. **must have admin perms**", inline=False)
     embed.add_field(name=f"/help ", value="displays this page", inline=False)
+    embed.add_field(name=f"/uptime ", value="shows bots uptime", inline=False)
     await interaction.response.send_message(embed=embed, ephemeral=True)
 bot.tree.add_command(help)
 
