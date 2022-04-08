@@ -174,9 +174,9 @@ bot.tree.add_command(createmuterole)
 async def uptime(interaction: discord.Interaction):
     time = datetime.datetime.now() - starttime
     p = str(time).split('.')[0].split(':')
-    x = f'{f"{str(int(p[2]))} Seconds" if int(p[2]) != 0 else ""}'
-    y = f'{f"{str(int(p[1]))} Minutes," if int(p[1]) != 0 else ""}'
-    z = f'{f"{str(int(p[0]))} Hours," if int(p[0]) != 0 else ""}'
+    x = f'''{f"{str(int(p[2]))} {'Seconds' if int(p[2]) > 1 else 'Second'}" if int(p[2]) != 0 else ''}'''
+    y = f'''{f"{str(int(p[1]))} {'Minutes' if int(p[1]) > 1 else 'Minute'}{', ' if int(p[2]) != 0 else ''}" if int(p[1]) != 0 else ""}'''
+    z = f'''{f"{str(int(p[0]))} {'Hours' if int(p[0]) > 1 else 'Hour'}{', ' if int(p[1]) != 0 or int(p[0]) != 0 else ''}" if int(p[0]) != 0 else ""}'''
     await interaction.response.send_message('Uptime:\n' + z + y + x, ephemeral=True)
 bot.tree.add_command(uptime)
 
@@ -218,5 +218,11 @@ async def help(interaction: discord.Interaction):
     embed.add_field(name=f"/uptime ", value="shows bots uptime", inline=False)
     await interaction.response.send_message(embed=embed, ephemeral=True)
 bot.tree.add_command(help)
+
+@app_commands.command(name='invite', description='Invite link.')
+async def invite(interaction: discord.Interaction):
+    await interaction.response.send_message(f'Invite link: {bot.invite_url}', ephemeral=True)
+bot.tree.add_command(invite)
+
 
 bot.run(token)
