@@ -221,7 +221,7 @@ bot.tree.add_command(help)
 
 @app_commands.command(name='invite', description='Invite link.')
 async def invite(interaction: discord.Interaction):
-    await interaction.response.send_message(f'Invite link: {bot.invite_url}', ephemeral=True)
+    await interaction.response.send_message(f'Invite link: https://discord.com/oauth2/authorize?client_id={bot.application_id}&permissions=8&scope=bot%20applications.commands', ephemeral=True)
 bot.tree.add_command(invite)
 
 
