@@ -11,7 +11,6 @@ import datetime
 from discord.ext.commands import Greedy
 import typing
 from discord.ext.commands import Context
-starttime = datetime.datetime.now()
 async def checkurl(url: str):
     try:
        async with aiohttp.ClientSession() as session:
@@ -42,6 +41,7 @@ async def on_ready():
     for guild in bot.guilds:
         bot.tree.copy_global_to(guild=guild)
         await bot.tree.sync(guild=guild)
+    bot.starttime = datetime.datetime.now()
     print(f'{bot.user} has connected to Discord!')
 
 
@@ -172,12 +172,15 @@ bot.tree.add_command(createmuterole)
 
 @app_commands.command(name='uptime', description='check how long the bot has been online.')
 async def uptime(interaction: discord.Interaction):
-    time = datetime.datetime.now() - starttime
+    time = datetime.datetime.now() - bot.starttime
     p = str(time).split('.')[0].split(':')
-    x = f'''{f"{str(int(p[2]))} {'Seconds' if int(p[2]) > 1 else 'Second'}" if int(p[2]) != 0 else ''}'''
-    y = f'''{f"{str(int(p[1]))} {'Minutes' if int(p[1]) > 1 else 'Minute'}{', ' if int(p[2]) != 0 else ''}" if int(p[1]) != 0 else ""}'''
-    z = f'''{f"{str(int(p[0]))} {'Hours' if int(p[0]) > 1 else 'Hour'}{', ' if int(p[1]) != 0 or int(p[0]) != 0 else ''}" if int(p[0]) != 0 else ""}'''
-    await interaction.response.send_message('Uptime:\n' + z + y + x, ephemeral=True)
+    k = int(p[0]) if ',' not in str(p[0]) else int(p[0].split(',')[1])
+    m = False if ',' not in str(p[0]) else str(p[0].split(',')[0]).split(' ')[0]
+    x = f'''{f"{str(int(p[2]))} {'Seconds' if int(p[2]) > 1 else 'Second'}" if int(p[2]) > 0 else ''}'''
+    y = f'''{f"{str(int(p[1]))} {'Minutes' if int(p[1]) > 1 else 'Minute'}{', ' if int(p[2]) > 0 else ''}" if int(p[1]) > 0 else ""}'''
+    z = f'''{f"{str(int(k))} {'Hours' if int(k) > 1 else 'Hour'}{', ' if int(p[1]) > 0 or int(p[2]) > 0 else ''}" if int(k) != 0 else ""}'''
+    l = f'''{f'{m} {"Days" if int(m) > 1 else "Day"}{", " if int(k) > 0 or int(p[1]) > 0 or int(p[2]) > 0 else ""}' if m != False else ''}'''
+    await interaction.response.send_message('Uptime:\n' + l + z + y + x, ephemeral=True)
 bot.tree.add_command(uptime)
 
 
