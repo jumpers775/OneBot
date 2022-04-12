@@ -1,8 +1,13 @@
-Version = '3.0.0b2'
+Version = '3.0.0b3'
 import os
+import ffmpeg
 import discord
 import aiohttp
+import asyncio
 import json
+from requests import options
+import youtube_dl
+from youtube_search import YoutubeSearch
 from dotenv import load_dotenv
 from discord.ext import commands
 from discord import app_commands
@@ -227,5 +232,91 @@ async def invite(interaction: discord.Interaction):
     await interaction.response.send_message(f'Invite link: https://discord.com/oauth2/authorize?client_id={bot.application_id}&permissions=8&scope=bot%20applications.commands', ephemeral=True)
 bot.tree.add_command(invite)
 
+# MUSIC STUFF
 
+class YTDLSource(discord.PCMVolumeTransformer):
+    def __init__(self, source, *, data, volume=0.5):
+        super().__init__(source, volume)
+
+        self.data = data
+
+        self.title = data.get('title')
+        self.url = data.get('url')
+    @classmethod
+    async def from_url(cls, url, *, loop=None, stream=False):
+        youtube_dl.utils.bug_reports_message = lambda: ''
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
+            'restrictfilenames': True,
+            'noplaylist': True,
+            'nocheckcertificate': True,
+            'ignoreerrors': False,
+            'logtostderr': False,
+            'quiet': True,
+            'no_warnings': True,
+            'default_search': 'auto',
+            'source_address': '0.0.0.0'
+        }
+        ffmpeg_options = {
+            'options': '-vn',
+        }
+        ytdl = youtube_dl.YoutubeDL(ydl_opts)
+        loop = loop or asyncio.get_event_loop()
+        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
+        if 'entries' in data:
+            # take first item from a playlist
+            data = data['entries'][0]
+
+        filename = data['url'] if stream else ytdl.prepare_filename(data)
+        return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
+
+
+class SelectSong(discord.ui.Select):
+    def __init__(self,options: dict):
+        self.optionz = options['results']
+        super().__init__(placeholder="Select an option",max_values=1,min_values=1,options=options['options'])
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.send_message(content=f"Now Playing {self.values[0]}!",ephemeral=True)
+        url = 'https://youtube.com'
+        for x in self.optionz:
+            if x['title'] == self.values[0]:
+                url += x['url_suffix']
+        b = discord.utils.get(bot.voice_clients, guild=interaction.guild)
+        if b != None:
+            await interaction.guild.voice_client.disconnect()
+        try:
+            vc = await interaction.user.voice.channel.connect()
+        except:
+            await interaction.response.send_message(f"{interaction.message.author.mention} not in a voice channel.", ephemeral=True)
+            return
+        audio = await YTDLSource.from_url(url=url, loop=bot.loop, stream=True)
+        vc.play(audio)
+        while vc.is_playing():
+            await asyncio.sleep(.1)
+        vc.stop()
+        await vc.disconnect()
+        
+
+
+class SelectView(discord.ui.View):
+    def __init__(self, *, timeout = 180, options: dict):
+        super().__init__(timeout=timeout)
+        self.add_item(SelectSong(options=options))
+
+@app_commands.command(name='play', description='plays a song from youtube.')
+async def play(interaction: discord.Interaction, arg: str):
+    message = await interaction.response.send_message('Searching...', ephemeral=True)
+    f = False    
+    results = YoutubeSearch(arg, max_results=10).to_json()
+    results = json.loads(results)
+    results = results['videos']
+    options = []
+    for i in results:
+        options.append(discord.SelectOption(label=i['title'], description=f'By {i["channel"]}', emoji='🎧'))
+    options = {'options': options, 'results': results}
+    view = SelectView(options=options)
+    await interaction.edit_original_message(content='Select a song to play:',view=view)
+
+bot.tree.add_command(play)
 bot.run(token)
