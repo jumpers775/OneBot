@@ -288,7 +288,7 @@ class SelectSong(discord.ui.Select):
         try:
             vc = await interaction.user.voice.channel.connect()
         except:
-            await interaction.response.send_message(f"{interaction.message.author.mention} not in a voice channel.", ephemeral=True)
+            await interaction.response.send_message(f"{interaction.message.author.mention}, you not in a voice channel.", ephemeral=True)
             return
         audio = await YTDLSource.from_url(url=url, loop=bot.loop, stream=True)
         vc.play(audio)
