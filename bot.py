@@ -305,10 +305,10 @@ class SelectView(discord.ui.View):
         self.add_item(SelectSong(options=options))
 
 @app_commands.command(name='play', description='plays a song from youtube.')
-async def play(interaction: discord.Interaction, arg: str):
+async def play(interaction: discord.Interaction, song: str):
     message = await interaction.response.send_message('Searching...', ephemeral=True)
     f = False    
-    results = YoutubeSearch(arg, max_results=10).to_json()
+    results = YoutubeSearch(song, max_results=10).to_json()
     results = json.loads(results)
     results = results['videos']
     options = []
@@ -317,6 +317,7 @@ async def play(interaction: discord.Interaction, arg: str):
     options = {'options': options, 'results': results}
     view = SelectView(options=options)
     await interaction.edit_original_message(content='Select a song to play:',view=view)
-
 bot.tree.add_command(play)
+
+
 bot.run(token)
