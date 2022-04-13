@@ -36,6 +36,16 @@ intents.reactions = True
 bot = commands.Bot(command_prefix = '$',intents=intents, activity=discord.Game(name='Elden Ring'))
 if not os.path.isdir('./Files'):
     os.mkdir('./Files')
+
+@bot.event
+async def on_member_join(member):
+    with open(f'./Files/{member.guild.id}.json', 'r') as f:
+        data = json.load(f)
+        if member.id not in data['xp']:
+            data['xp'][member.id] = 0
+            with open(f'./Files/{member.guild.id}.json', 'w') as f:
+                json.dump(data, f)
+
 @bot.event
 async def on_ready():
     for a in bot.guilds:
@@ -46,6 +56,14 @@ async def on_ready():
     for guild in bot.guilds:
         bot.tree.copy_global_to(guild=guild)
         await bot.tree.sync(guild=guild)
+        with open(f'./Files/{guild.id}.json', 'r') as f:
+            x = json.load(f)
+            if len(guild.members) != len(x['xp']):
+                for member in guild.members:
+                    if member.id not in x['xp']:
+                        x['xp'][member.id] = 0
+                with open(f'./Files/{guild.id}.json', 'w') as f:
+                    json.dump(x, f)
     bot.starttime = datetime.datetime.now()
     print(f'{bot.user} has connected to Discord!')
 
