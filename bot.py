@@ -41,7 +41,7 @@ async def on_ready():
     for a in bot.guilds:
         if not os.path.exists(f'./Files/{a.id}.json'):
             with open(f'./Files/{a.id}.json', 'w') as f:
-                x = {"MuteRole":False}
+                x = {"MuteRole":False,"xp":False}
                 json.dump(x, f)
     for guild in bot.guilds:
         bot.tree.copy_global_to(guild=guild)
@@ -319,5 +319,127 @@ async def play(interaction: discord.Interaction, song: str):
     await interaction.edit_original_message(content='Select a song to play:',view=view)
 bot.tree.add_command(play)
 
+
+# xp stuff
+@bot.listen('on_message')
+async def on_message(message):
+    if message.author.bot:
+        await bot.process_commands(message)
+        return
+    if message.guild is None:
+        await bot.process_commands(message)
+        return
+    with open(f'Files/{message.guild.id}.json', 'r') as f:
+        data = json.load(f)
+        if data['xp'] != None:
+            data['xp'][str(message.author.id)] += 1
+            with open(f'Files/{message.guild.id}.json', 'w') as f:
+                json.dump(data, f)
+            try:
+                z = open(f'Files/{message.guild.id}.json', 'r')
+                data2 = json.load(z)
+                if data == data2:
+                    await bot.process_commands(message)
+                    return
+            except:
+                os.remove(f'Files/{message.guild.id}.json')
+                json.dump(data, f)
+                await bot.process_commands(message)
+                return
+        else:
+            await bot.process_commands(message)
+            return
+    
+@app_commands.command(name='stats', description='gets a users stats.')
+async def stats(interaction: discord.Interaction, user: discord.Member = None):
+    if user == None:
+        user = interaction.user
+    embed = discord.Embed(title=f'{user.name} Stats', color=0x00ff00)
+    with open(f'Files/{interaction.guild.id}.json', 'r') as f:
+        data = json.load(f)
+        if data['xp'] != False:
+            embed.add_field(name='XP', value=data['xp'][str(user.id)])
+        else:
+            embed.add_field(name='XP', value=0)
+    await interaction.response.send_message(embed=embed)
+bot.tree.add_command(stats)
+
+xp = discord.app_commands.Group(name='xp', description='xp related commands.')
+@discord.app_commands.checks.has_permissions(administrator=True)
+@xp.command(name='disable', description='disables the xp system.')
+async def disable(interaction: discord.Interaction):
+    await interaction.response.send_message('Disabling XP...')
+    with open(f'Files/{interaction.guild.id}.json', 'r') as f:
+        data = json.load(f)
+        data['xp'] = False
+        with open(f'Files/{interaction.guild.id}.json', 'w') as f:
+            json.dump(data, f)
+            await interaction.edit_original_message(content='XP is now disabled!')
+@disable.error
+async def disable_error(interaction: discord.Interaction, error: Exception):
+    await interaction.response.send_message(f'{interaction.message.author.mention}, You are not an admin on {interaction.guild.name}.')
+@discord.app_commands.checks.has_permissions(administrator=True)
+@xp.command(name='enable', description='enables the xp system.')
+async def enable(interaction: discord.Interaction):
+    await interaction.response.send_message('Enabling XP...\n this may take a while on some servers.')
+    with open(f'Files/{interaction.guild.id}.json', 'r') as f:
+        data = json.load(f)
+        data['xp'] = {}
+        for user in interaction.guild.members:
+            data['xp'][user.id] = 0
+        with open(f'Files/{interaction.guild.id}.json', 'w') as f:
+            json.dump(data, f)
+            await interaction.edit_original_message(content='XP is now enabled!')
+@enable.error
+async def enable_error(interaction: discord.Interaction, error: Exception):
+    await interaction.response.send_message(f'{interaction.message.author.mention}, You are not an admin on {interaction.guild.name}.')
+
+@discord.app_commands.checks.has_permissions(administrator=True)
+@xp.command(name='set', description='sets a users xp.')
+async def set(interaction: discord.Interaction, user: discord.Member, amount: int):
+    with open(f'Files/{interaction.guild.id}.json', 'r') as f:
+        data = json.load(f)
+        if data['xp'] == False:
+            await interaction.response.send_message('XP is not enabled!')
+            return
+        data['xp'][str(user.id)] = amount
+        with open(f'Files/{interaction.guild.id}.json', 'w') as f:
+            json.dump(data, f)
+            await interaction.response.send_message(f'{user.mention}\'s xp has been set to {amount}.')
+@set.error
+async def set_error(interaction: discord.Interaction, error: Exception):
+    await interaction.response.send_message(f'{interaction.message.author.mention}, You are not an admin on {interaction.guild.name}.')
+@discord.app_commands.checks.has_permissions(administrator=True)
+@xp.command(name='add', description='adds to a users xp.')
+async def add(interaction: discord.Interaction, user: discord.Member, amount: int):
+    with open(f'Files/{interaction.guild.id}.json', 'r') as f:
+        data = json.load(f)
+        if data['xp'] == False:
+            await interaction.response.send_message('XP is not enabled!')
+            return
+        data['xp'][str(user.id)] += amount
+        with open(f'Files/{interaction.guild.id}.json', 'w') as f:
+            json.dump(data, f)
+            await interaction.response.send_message(f'{user.mention}\'s xp has been added to {amount}.')
+@add.error
+async def add_error(interaction: discord.Interaction, error: Exception):
+    await interaction.response.send_message(f'{interaction.message.author.mention}, You are not an admin on {interaction.guild.name}.')
+@discord.app_commands.checks.has_permissions(administrator=True)
+@xp.command(name='remove', description='removes from a users xp.')
+async def remove(interaction: discord.Interaction, user: discord.Member, amount: int):
+    with open(f'Files/{interaction.guild.id}.json', 'r') as f:
+        data = json.load(f)
+        if data['xp'] == False:
+            await interaction.response.send_message('XP is not enabled!')
+            return
+        data['xp'][str(user.id)] -= amount
+        with open(f'Files/{interaction.guild.id}.json', 'w') as f:
+            json.dump(data, f)
+            await interaction.response.send_message(f'{user.mention}\'s xp has been removed from {amount}.')
+@remove.error
+async def remove_error(interaction: discord.Interaction, error: Exception):
+    await interaction.response.send_message(f'{interaction.message.author.mention}, You are not an admin on {interaction.guild.name}.')
+
+bot.tree.add_command(xp)
 
 bot.run(token)

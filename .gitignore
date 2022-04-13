@@ -2,5 +2,4 @@
 *.json
 __pycache__
 Files/
-data/
 .DS_Store
