@@ -526,7 +526,7 @@ async def remove(interaction: discord.Interaction, user: discord.Member, amount:
             await interaction.response.send_message(f'{user.mention}\'s xp has been removed from {amount}.')
 @remove.error
 async def remove_error(interaction: discord.Interaction, error: Exception):
-    await interaction.response.send_message(f'{interaction.user.mention}, You are not an admin on {interaction.guild.name}.{error}')
+    await interaction.response.send_message(f'{interaction.user.mention}, You are not an admin on {interaction.guild.name}.')
 
 bot.tree.add_command(xp)
 
