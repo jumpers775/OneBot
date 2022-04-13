@@ -396,22 +396,28 @@ xp = discord.app_commands.Group(name='xp', description='xp related commands.')
 @discord.app_commands.checks.has_permissions(administrator=True)
 @xp.command(name='disable', description='disables the xp system.')
 async def disable(interaction: discord.Interaction):
-    await interaction.response.send_message('Disabling XP...')
     with open(f'Files/{interaction.guild.id}.json', 'r') as f:
         data = json.load(f)
-        data['xp'] = False
-        with open(f'Files/{interaction.guild.id}.json', 'w') as f:
-            json.dump(data, f)
-            await interaction.edit_original_message(content='XP is now disabled!')
+        if data['xp'] != False:
+            await interaction.response.send_message('Disabling XP...')
+            data['xp'] = False
+            with open(f'Files/{interaction.guild.id}.json', 'w') as f:
+                json.dump(data, f)
+                await interaction.edit_original_message(content='XP is now disabled!')
+        else:
+            await interaction.response.send_message('XP is already disabled!')
 @disable.error
 async def disable_error(interaction: discord.Interaction, error: Exception):
     await interaction.response.send_message(f'{interaction.message.author.mention}, You are not an admin on {interaction.guild.name}.')
 @discord.app_commands.checks.has_permissions(administrator=True)
 @xp.command(name='enable', description='enables the xp system.')
 async def enable(interaction: discord.Interaction):
-    await interaction.response.send_message('Enabling XP...\n this may take a while on some servers.')
     with open(f'Files/{interaction.guild.id}.json', 'r') as f:
         data = json.load(f)
+        if data['xp'] != False:
+            await interaction.response.send_message('XP is already enabled!')
+            return
+        await interaction.response.send_message('Enabling XP...\n this may take a while on some servers.')
         data['xp'] = {}
         for user in interaction.guild.members:
             data['xp'][user.id] = 0
