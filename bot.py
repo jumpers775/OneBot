@@ -246,6 +246,7 @@ async def help(interaction: discord.Interaction):
     embed.add_field(name=f"/version ", value="shows bots version", inline=False)
     embed.add_field(name=f"/setmuterole <role>", value="sets the mute role", inline=False)
     embed.add_field(name=f"/createmuterole ", value="creates the mute role", inline=False)
+    embed.add_field(name=f"/invite", value="gets the bot invite",inline=False)
     embed.add_field(name=f"/xp enable", value="enables the xp system.", inline=False)
     embed.add_field(name=f"/xp disable", value="disables the xp system.", inline=False)
     embed.add_field(name=f"/xp set <user> <amount>", value="sets the xp amount for a given user.", inline=False)
