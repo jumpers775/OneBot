@@ -1,4 +1,4 @@
-Version = '3.0.0b3'
+Version = '3.0.0'
 import os
 import ffmpeg
 import math
