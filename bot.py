@@ -347,6 +347,14 @@ async def play(interaction: discord.Interaction, song: str):
     await interaction.edit_original_message(content='Select a song to play:',view=view)
 bot.tree.add_command(play)
 
+#stop playing audio
+@app_commands.command(name='stop', description='stops the audio.')
+async def stop(interaction: discord.Interaction):
+    b = discord.utils.get(bot.voice_clients, guild=interaction.guild)
+    if b != None:
+        await interaction.guild.voice_client.disconnect()
+    await interaction.response.send_message(f"{interaction.message.author.mention}, stopped playing audio.", ephemeral=True)
+bot.tree.add_command(stop)
 
 # xp stuff
 @bot.listen('on_message')
