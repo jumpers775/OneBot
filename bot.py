@@ -1,6 +1,7 @@
 Version = '3.0.0b3'
 import os
 import ffmpeg
+import math
 import discord
 import aiohttp
 import asyncio
@@ -369,6 +370,16 @@ async def on_message(message):
         data = json.load(f)
         if data['xp'] != None:
             data['xp'][str(message.author.id)] += 1
+            p = int(data['xp'][str(message.author.id)])/100
+            if p.is_integer():
+                await message.add_reaction('🎉')
+                #get role for level p
+                try:
+                    role = discord.utils.get(message.guild.roles, name=f'level {p}')
+                except:
+                    role = await message.guild.create_role(name=f'level {p}')
+                await message.author.add_role(role)
+                await message.author.remove_role(discord.utils.get(message.guild.roles, name=f'level {p-1}'))
             with open(f'Files/{message.guild.id}.json', 'w') as f:
                 json.dump(data, f)
             try:
@@ -434,13 +445,14 @@ async def enable(interaction: discord.Interaction):
             await interaction.edit_original_message(content='XP is now enabled!')
 @enable.error
 async def enable_error(interaction: discord.Interaction, error: Exception):
-    await interaction.response.send_message(f'{interaction.message.author.mention}, You are not an admin on {interaction.guild.name}.')
+    await interaction.response.send_message(f'{interaction.user.mention}, You are not an admin on {interaction.guild.name}.')
 
 @discord.app_commands.checks.has_permissions(administrator=True)
 @xp.command(name='set', description='sets a users xp.')
 async def set(interaction: discord.Interaction, user: discord.Member, amount: int):
     with open(f'Files/{interaction.guild.id}.json', 'r') as f:
         data = json.load(f)
+        x = math.trunc(data['xp'][str(user.id)]/100)
         if data['xp'] == False:
             await interaction.response.send_message('XP is not enabled!')
             return
@@ -448,9 +460,21 @@ async def set(interaction: discord.Interaction, user: discord.Member, amount: in
         with open(f'Files/{interaction.guild.id}.json', 'w') as f:
             json.dump(data, f)
             await interaction.response.send_message(f'{user.mention}\'s xp has been set to {amount}.')
+            p = int(data['xp'][str(user.id)])/100
+            p = math.trunc(p)
+            role = discord.utils.get(interaction.guild.roles, name=f'level {p}')
+            if role is None:
+                role = await interaction.guild.create_role(name=f'level {str(p)}')
+            await user.add_roles(role)
+            try:
+                await user.remove_roles(discord.utils.get(interaction.guild.roles, name=f'level {x}'))
+            except:
+                pass
+            await interaction.response.send_message(f'{user.mention}\'s xp has been removed from {amount}.')
+
 @set.error
 async def set_error(interaction: discord.Interaction, error: Exception):
-    await interaction.response.send_message(f'{interaction.message.author.mention}, You are not an admin on {interaction.guild.name}.')
+    await interaction.response.send_message(f'{interaction.user.mention}, You are not an admin on {interaction.guild.name}.')
 @discord.app_commands.checks.has_permissions(administrator=True)
 @xp.command(name='add', description='adds to a users xp.')
 async def add(interaction: discord.Interaction, user: discord.Member, amount: int):
@@ -459,13 +483,24 @@ async def add(interaction: discord.Interaction, user: discord.Member, amount: in
         if data['xp'] == False:
             await interaction.response.send_message('XP is not enabled!')
             return
+        x = math.trunc(data['xp'][str(user.id)]/100)
         data['xp'][str(user.id)] += amount
         with open(f'Files/{interaction.guild.id}.json', 'w') as f:
             json.dump(data, f)
-            await interaction.response.send_message(f'{user.mention}\'s xp has been added to {amount}.')
+            p = int(data['xp'][str(user.id)])/100
+            p = math.trunc(p)
+            role = discord.utils.get(interaction.guild.roles, name=f'level {p}')
+            if role is None:
+                role = await interaction.guild.create_role(name=f'level {str(p)}')
+            await user.add_roles(role)
+            try:
+                await user.remove_roles(discord.utils.get(interaction.guild.roles, name=f'level {x}'))
+            except:
+                pass
+            await interaction.response.send_message(f'{user.mention}\'s xp has been removed from {amount}.')
 @add.error
 async def add_error(interaction: discord.Interaction, error: Exception):
-    await interaction.response.send_message(f'{interaction.message.author.mention}, You are not an admin on {interaction.guild.name}.')
+    await interaction.response.send_message(f'{interaction.user.mention}, You are not an admin on {interaction.guild.name}.')
 @discord.app_commands.checks.has_permissions(administrator=True)
 @xp.command(name='remove', description='removes from a users xp.')
 async def remove(interaction: discord.Interaction, user: discord.Member, amount: int):
@@ -474,13 +509,24 @@ async def remove(interaction: discord.Interaction, user: discord.Member, amount:
         if data['xp'] == False:
             await interaction.response.send_message('XP is not enabled!')
             return
+        x = math.trunc(data['xp'][str(user.id)]/100)
         data['xp'][str(user.id)] -= amount
         with open(f'Files/{interaction.guild.id}.json', 'w') as f:
             json.dump(data, f)
+            p = int(data['xp'][str(user.id)])/100
+            p = math.trunc(p)
+            role = discord.utils.get(interaction.guild.roles, name=f'level {p}')
+            if role is None:
+                role = await interaction.guild.create_role(name=f'level {str(p)}')
+            await user.add_roles(role)
+            try:
+                await user.remove_roles(discord.utils.get(interaction.guild.roles, name=f'level {x}'))
+            except:
+                pass
             await interaction.response.send_message(f'{user.mention}\'s xp has been removed from {amount}.')
 @remove.error
 async def remove_error(interaction: discord.Interaction, error: Exception):
-    await interaction.response.send_message(f'{interaction.message.author.mention}, You are not an admin on {interaction.guild.name}.')
+    await interaction.response.send_message(f'{interaction.user.mention}, You are not an admin on {interaction.guild.name}.{error}')
 
 bot.tree.add_command(xp)
 
