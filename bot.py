@@ -1,4 +1,4 @@
-Version = '3.0.0'
+Version = '3.0.1b1'
 import os
 import ffmpeg
 import math
@@ -321,7 +321,13 @@ class SelectSong(discord.ui.Select):
             await interaction.response.send_message(f"{interaction.message.author.mention}, you not in a voice channel.", ephemeral=True)
             return
         audio = await YTDLSource.from_url(url=url, loop=bot.loop, stream=True)
-        vc.play(audio)
+        try:
+            vc.play(audio)
+        except:
+            try:
+                vc.play(audio)
+            except:
+                await interaction.response.send_message("I could not play that song.", ephemeral=True)   
         while vc.is_playing():
             await asyncio.sleep(.1)
         vc.stop()
@@ -355,7 +361,7 @@ async def stop(interaction: discord.Interaction):
     b = discord.utils.get(bot.voice_clients, guild=interaction.guild)
     if b != None:
         await interaction.guild.voice_client.disconnect()
-    await interaction.response.send_message(f"{interaction.user.mention}, stopped playing audio.", ephemeral=True)
+    await interaction.response.send_message("Stopped playing audio.", ephemeral=True)
 bot.tree.add_command(stop)
 
 # xp stuff
