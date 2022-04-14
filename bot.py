@@ -67,6 +67,9 @@ async def on_ready():
                     with open(f'./Files/{guild.id}.json', 'w') as f:
                         json.dump(x, f)
     bot.starttime = datetime.datetime.now()
+    bot.musicqueue = {}
+    for guild in bot.guilds:
+        bot.musicqueue[guild.id] = []
     print(f'{bot.user} has connected to Discord!')
 
 
@@ -312,6 +315,9 @@ class SelectSong(discord.ui.Select):
         for x in self.optionz:
             if x['title'] == self.values[0]:
                 url += x['url_suffix']
+        bot.musicqueue[interaction.guild.id].append(url)
+        if not bot.musicqueue[interaction.guild.id][0] == url:
+            return
         b = discord.utils.get(bot.voice_clients, guild=interaction.guild)
         if b != None:
             await interaction.guild.voice_client.disconnect()
@@ -320,16 +326,19 @@ class SelectSong(discord.ui.Select):
         except:
             await interaction.response.send_message(f"{interaction.message.author.mention}, you not in a voice channel.", ephemeral=True)
             return
-        audio = await YTDLSource.from_url(url=url, loop=bot.loop, stream=True)
-        try:
-            vc.play(audio)
-        except:
+        while not bot.musicqueue[interaction.guild.id] == []:
+            url = bot.musicqueue[interaction.guild.id][0]
+            audio = await YTDLSource.from_url(url=url, loop=bot.loop, stream=True)
             try:
                 vc.play(audio)
             except:
-                await interaction.response.send_message("I could not play that song.", ephemeral=True)   
-        while vc.is_playing():
-            await asyncio.sleep(.1)
+                try:
+                    vc.play(audio)
+                except:
+                    pass
+            while vc.is_playing():
+                await asyncio.sleep(.1)
+            bot.musicqueue[interaction.guild.id].pop(0)
         vc.stop()
         await vc.disconnect()
         
@@ -339,11 +348,12 @@ class SelectView(discord.ui.View):
     def __init__(self, *, timeout = 180, options: dict):
         super().__init__(timeout=timeout)
         self.add_item(SelectSong(options=options))
+music = discord.app_commands.Group(name='music', description='music related commands.')
 
-@app_commands.command(name='play', description='plays a song from youtube.')
+@music.command(name='play', description='plays a song from youtube.')
 async def play(interaction: discord.Interaction, song: str):
     message = await interaction.response.send_message('Searching...', ephemeral=True)
-    f = False    
+    f = False
     results = YoutubeSearch(song, max_results=10).to_json()
     results = json.loads(results)
     results = results['videos']
@@ -353,16 +363,30 @@ async def play(interaction: discord.Interaction, song: str):
     options = {'options': options, 'results': results}
     view = SelectView(options=options)
     await interaction.edit_original_message(content='Select a song to play:',view=view)
-bot.tree.add_command(play)
 
 #stop playing audio
-@app_commands.command(name='stop', description='stops the audio.')
+@music.command(name='stop', description='stops the audio.')
 async def stop(interaction: discord.Interaction):
+    bot.musicqueue[interaction.guild.id] = []
     b = discord.utils.get(bot.voice_clients, guild=interaction.guild)
     if b != None:
         await interaction.guild.voice_client.disconnect()
     await interaction.response.send_message("Stopped playing audio.", ephemeral=True)
-bot.tree.add_command(stop)
+
+@music.command(name='showqueue', description='shows the current queue.')
+async def showqueue(interaction: discord.Interaction):
+    if bot.musicqueue[interaction.guild.id] == []:
+        await interaction.response.send_message("No songs in queue.", ephemeral=True)
+        return
+    songs = []
+    youtube_dl_opts = {}
+    for a in bot.musicqueue[interaction.guild.id]:
+        with youtube_dl.YoutubeDL(youtube_dl_opts) as ydl:
+            info_dict = ydl.extract_info(a, download=False)
+            video_title = info_dict.get('title', None)
+            songs.append(f'{video_title}\n')
+    await interaction.response.send_message(f"Songs in queue: {songs}", ephemeral=True)
+bot.tree.add_command(music)
 
 # xp stuff
 @bot.listen('on_message')
