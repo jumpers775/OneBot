@@ -1,4 +1,4 @@
-#**OneBot**
+# **OneBot**
 Discord bot that aspires to do everything.
 
 # [Invite link](https://discord.com/oauth2/authorize?client_id=863282370319876127&permissions=8&scope=bot%20applications.commands)
