@@ -59,12 +59,13 @@ async def on_ready():
         await bot.tree.sync(guild=guild)
         with open(f'./Files/{guild.id}.json', 'r') as f:
             x = json.load(f)
-            if len(guild.members) != len(x['xp']):
-                for member in guild.members:
-                    if member.id not in x['xp']:
-                        x['xp'][member.id] = 0
-                with open(f'./Files/{guild.id}.json', 'w') as f:
-                    json.dump(x, f)
+            if x['xp'] != False:
+                if len(guild.members) != len(x['xp']):
+                    for member in guild.members:
+                        if member.id not in x['xp']:
+                            x['xp'][member.id] = 0
+                    with open(f'./Files/{guild.id}.json', 'w') as f:
+                        json.dump(x, f)
     bot.starttime = datetime.datetime.now()
     print(f'{bot.user} has connected to Discord!')
 
