@@ -373,7 +373,10 @@ async def play(interaction: discord.Interaction, song: str):
         options.append(discord.SelectOption(label=i['title'], description=f'By {i["channel"]}', emoji='🎧'))
     options = {'options': options, 'results': results}
     view = SelectView(options=options)
-    await interaction.edit_original_message(content='Select a song to play:',view=view)
+    try:
+        await interaction.edit_original_message(content='Select a song to play:',view=view)
+    except:
+        await interaction.edit_original_message(content='An error occured. Please try again.')
 
 #stop playing audio
 @music.command(name='stop', description='stops the audio.')
