@@ -460,7 +460,6 @@ async def set(interaction: discord.Interaction, user: discord.Member, amount: in
         data['xp'][str(user.id)] = amount
         with open(f'Files/{interaction.guild.id}.json', 'w') as f:
             json.dump(data, f)
-            await interaction.response.send_message(f'{user.mention}\'s xp has been set to {amount}.')
             p = int(data['xp'][str(user.id)])/100
             p = math.trunc(p)
             role = discord.utils.get(interaction.guild.roles, name=f'level {p}')
@@ -471,7 +470,7 @@ async def set(interaction: discord.Interaction, user: discord.Member, amount: in
                 await user.remove_roles(discord.utils.get(interaction.guild.roles, name=f'level {x}'))
             except:
                 pass
-            await interaction.response.send_message(f'{user.mention}\'s xp has been removed from {amount}.')
+            await interaction.response.send_message(f'{user.mention}\'s xp has been set to {amount}.')
 
 @set.error
 async def set_error(interaction: discord.Interaction, error: Exception):
@@ -498,7 +497,7 @@ async def add(interaction: discord.Interaction, user: discord.Member, amount: in
                 await user.remove_roles(discord.utils.get(interaction.guild.roles, name=f'level {x}'))
             except:
                 pass
-            await interaction.response.send_message(f'{user.mention}\'s xp has been removed from {amount}.')
+            await interaction.response.send_message(f'{amount} has been added to {user.mention}\'s .')
 @add.error
 async def add_error(interaction: discord.Interaction, error: Exception):
     await interaction.response.send_message(f'{interaction.user.mention}, You are not an admin on {interaction.guild.name}.')
@@ -524,7 +523,7 @@ async def remove(interaction: discord.Interaction, user: discord.Member, amount:
                 await user.remove_roles(discord.utils.get(interaction.guild.roles, name=f'level {x}'))
             except:
                 pass
-            await interaction.response.send_message(f'{user.mention}\'s xp has been removed from {amount}.')
+            await interaction.response.send_message(f'{amount} has been removed from {user.mention}\'s xp .')
 @remove.error
 async def remove_error(interaction: discord.Interaction, error: Exception):
     await interaction.response.send_message(f'{interaction.user.mention}, You are not an admin on {interaction.guild.name}.')
