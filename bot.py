@@ -140,6 +140,17 @@ async def mute_error(interaction: discord.Interaction, error: Exception):
         else:
             await interaction.response.send_message('admin privileges are required to use this command.', ephemeral=True)
 
+@discord.app_commands.checks.has_permissions(administrator=True)
+@app_commands.command(name='purge', description='Purges messages from a channel.')
+async def purge(interaction: discord.Interaction, member: discord.Member = None, amount: int = 1):
+    if member is None:
+        await interaction.response.send_message(f'Purging {amount} messages.')
+        await interaction.channel.purge(limit=amount)
+    else:
+        await interaction.response.send_message(f'Purging {amount} messages from {member.mention}.')
+        await interaction.channel.purge(limit=amount, check=lambda m: m.author == member)
+bot.tree.add_command(purge)
+
 
 @discord.app_commands.checks.has_permissions(administrator=True)
 @app_commands.command(name='unmute', description='unmutes a user.')
@@ -399,7 +410,7 @@ async def on_message(message):
         return
     with open(f'Files/{message.guild.id}.json', 'r') as f:
         data = json.load(f)
-        if data['xp'] != None:
+        if data['xp'] != False:
             data['xp'][str(message.author.id)] += 1
             p = int(data['xp'][str(message.author.id)])/100
             if p.is_integer():
