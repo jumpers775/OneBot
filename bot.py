@@ -355,7 +355,7 @@ async def stop(interaction: discord.Interaction):
     b = discord.utils.get(bot.voice_clients, guild=interaction.guild)
     if b != None:
         await interaction.guild.voice_client.disconnect()
-    await interaction.response.send_message(f"{interaction.message.author.mention}, stopped playing audio.", ephemeral=True)
+    await interaction.response.send_message(f"{interaction.user.mention}, stopped playing audio.", ephemeral=True)
 bot.tree.add_command(stop)
 
 # xp stuff
