@@ -399,6 +399,30 @@ async def showqueue(interaction: discord.Interaction):
     await interaction.response.send_message(f"Songs in queue: {songs}", ephemeral=True)
 bot.tree.add_command(music)
 
+class Buttons(discord.ui.View):
+    def __init__(self, *, timeout=180, num: str):
+        self.num = num
+        super().__init__(timeout=timeout)
+    @discord.ui.button(label="Yes",style=discord.ButtonStyle.green)
+    async def blurple_button(self,button:discord.ui.Button,interaction:discord.Interaction):
+        bot.musicqueue[interaction.guild.id].remove(self.num)
+        await interaction.response.edit_message(content=f"Removed {self.num} from queue.")
+    @discord.ui.button(label="No",style=discord.ButtonStyle.red)
+    async def gray_button(self,button:discord.ui.Button,interaction:discord.Interaction):
+        await interaction.response.edit_message(content='Cancelled.',)
+
+@music.command(name='delqueue', description='removes a song from the queue.')
+async def delqueue(interaction: discord.Interaction, song: str):
+    if bot.musicqueue[interaction.guild.id] == []:
+        await interaction.response.send_message("No songs in queue.", ephemeral=True)
+        return
+    songs = []
+    for a in bot.musicqueue[interaction.guild.id]:
+        if song in a:
+            songs.append(a)
+    view = Buttons(num=songs[0])
+    interaction.response.send_message(f"would you ike to remove {songs[0]} from the queue?", view=view)
+
 # xp stuff
 @bot.listen('on_message')
 async def on_message(message):
