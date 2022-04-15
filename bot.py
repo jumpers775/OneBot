@@ -9,6 +9,7 @@ import json
 from requests import options
 import youtube_dl
 from youtube_search import YoutubeSearch
+from discord_together import DiscordTogether
 from dotenv import load_dotenv
 from discord.ext import commands
 from discord import app_commands
@@ -49,6 +50,7 @@ async def on_member_join(member):
 
 @bot.event
 async def on_ready():
+    bot.togetherControl = await DiscordTogether(token)
     for a in bot.guilds:
         if not os.path.exists(f'./Files/{a.id}.json'):
             with open(f'./Files/{a.id}.json', 'w') as f:
@@ -597,5 +599,16 @@ async def remove_error(interaction: discord.Interaction, error: Exception):
     await interaction.response.send_message(f'{interaction.user.mention}, You are not an admin on {interaction.guild.name}.')
 
 bot.tree.add_command(xp)
+
+@app_commands.command(name='games', description='plays a party game')
+async def games(interaction: discord.Interaction, game: typing.Literal['youtube', 'poker', 'chess', 'betrayal', 'fishing', 'letter-league', 'word-snack', 'sketch-heads', 'spellcast', 'awkword', 'checkers', 'blazing-8s', 'land-io', 'putt-party']):
+    if interaction.user.voice.channel is None:
+        await interaction.response.send_message('You must be in a voice channel to play a game.')
+        return
+    link = await bot.togetherControl.create_link(interaction.user.voice.channel.id, game)
+    await interaction.response.send_message(f"click the link to play!\n{link}", suppress_embeds=True, ephemeral=True)
+bot.tree.add_command(games)
+
+
 
 bot.run(token)
