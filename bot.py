@@ -123,6 +123,9 @@ async def sync(ctx: Context, guilds: Greedy[discord.Object], spec: typing.Option
 @discord.app_commands.checks.has_permissions(administrator=True)
 @app_commands.command(name='mute', description='Mutes a user.')
 async def mute(interaction: discord.Interaction, member: discord.Member, reason: str):
+    if member == bot.user:
+        await interaction.send('No.')
+        return
     mute = ''
     with open(f'./Files/{interaction.guild.id}.json', 'r') as f:
         x = json.load(f)
@@ -160,18 +163,65 @@ async def mute_error(interaction: discord.Interaction, error: Exception):
         else:
             await interaction.response.send_message('admin privileges are required to use this command.', ephemeral=True)
 
+purge = discord.app_commands.Group(name='purge', description='Purges messages.')
 @discord.app_commands.checks.has_permissions(administrator=True)
-@app_commands.command(name='purge', description='Purges messages from a channel.')
-async def purge(interaction: discord.Interaction, member: discord.Member = None, amount: int = 1):
-    if member is None:
-        await interaction.response.send_message(f'Purging {amount} messages.')
-        await interaction.channel.purge(limit=amount)
+@purge.command(name='channel', description='Purges messages from a channel.')
+async def purge_channel(interaction: discord.Interaction, channel: discord.TextChannel = None, amount: int = 0,):
+    if channel is None:
+        channel = interaction.channel
+    if amount == 0:
+        view=Buttons2()
+        await interaction.response.send_message('This will purge all messages, are you sure?',view=view,ephemeral=True)
+        time = 0
+        while view.show() is None:
+            time += 1
+            if time == 200:
+                await interaction.edit_original_message(content='Purge cancelled.',view=None)
+                return
+            await asyncio.sleep(.1)
+        if view.show() == False:
+            await interaction.edit_original_message(content='Purge cancelled.',view=None)
+            return
+        await channel.purge()
+        if channel == interaction.channel:
+            await interaction.followup.send(f'Purged all messages from channel {channel}.',ephemeral=True)
+        else:
+            await interaction.edit_original_message(content=f'Purged all messages from channel {channel}.',view=None)
     else:
-        await interaction.response.send_message(f'Purging {amount} messages from {member.mention}.')
-        await interaction.channel.purge(limit=amount, check=lambda m: m.author == member)
-@purge.error
-async def purge_error(interaction: discord.Interaction, error: Exception):
-    await interaction.response.send_message('admin privileges are required to use this command.', ephemeral=True)
+        await interaction.channel.purge(limit=amount)
+        await interaction.response.send_message(f'Purged {amount} messages in {channel}',ephemeral=True)
+@purge_channel.error
+async def purge_channel_error(interaction: discord.Interaction, error: Exception):
+    await interaction.response.send_message('admin privileges are required to use this command.',ephemeral=True)
+@discord.app_commands.checks.has_permissions(administrator=True)
+@purge.command(name='user', description='Purges messages from a user.')
+async def purge_user(interaction: discord.Interaction, user: discord.Member, amount: int = 0):
+    if user == bot.user:
+        await interaction.response.send_message('No.',ephemeral=True)
+        return
+    if amount == 0:
+        view=Buttons2()
+        await interaction.response.send_message(f'This will purge all messages from {user.mention}, are you sure?',view=view,ephemeral=True)
+        time = 0
+        while view.show() is None:
+            time += 1
+            if time == 300:
+                await interaction.edit_original_message(content='Purge cancelled.',view=None)
+                return
+            await asyncio.sleep(.1)
+        if view.show() == False:
+            await interaction.edit_original_message(content='Cancelled.',view=None)
+            return
+        await interaction.channel.purge(check=lambda m: m.author == user)
+        await interaction.edit_original_message(content=f'Purged all messages from {user.mention}.',view=None)
+    else:
+        await interaction.channel.purge(check=lambda m: m.author == user, limit=amount)
+        await interaction.response.send_message(f'Purged {amount} messages from {user.mention}',ephemeral=True)
+@purge_user.error
+async def purge_user_error(interaction: discord.Interaction, error: Exception):
+    await interaction.response.send_message('admin privileges are required to use this command.',ephemeral=True)
+
+
 bot.tree.add_command(purge)
 
 
@@ -730,7 +780,7 @@ async def enable(interaction: discord.Interaction):
             with open ('defaults.json', 'r') as k:
                 data2 = json.load(k)
                 with open(f'Files/{interaction.guild.id}.json', 'w') as z:
-                    data['bannedwords'] = data2['defaultlist']
+                    data['bannedwords'] = data2['list']
                     json.dump(data, z)
                     await interaction.edit_original_message(content='Banned words are now enabled using the default list. Use `/banwords` to manage them.',view=None)
                     return
@@ -752,6 +802,18 @@ async def disable(interaction: discord.Interaction):
 @disable.error
 async def disable_error(interaction: discord.Interaction, error: Exception):
     await interaction.response.send_message(f'{interaction.user.mention}, You are not an admin on {interaction.guild.name}.')
+
+@banwords.command(name='show', description='shows banned words.')
+async def show(interaction: discord.Interaction):
+    with open(f'Files/{interaction.guild.id}.json', 'r') as f:
+        data = json.load(f)
+        if data['bannedwords'] == False:
+            await interaction.response.send_message('Banned words are not enabled!', ephemeral=True)
+            return
+        p = ''
+        for word in data['bannedwords']:
+            p += f'{word}{", " if word != data["bannedwords"][len(data["bannedwords"])-1] else ""}'
+        await interaction.response.send_message(f'Banned words: {p}', ephemeral=True)
 bot.tree.add_command(banwords)
 
 bot.run(token)
