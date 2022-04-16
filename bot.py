@@ -704,6 +704,42 @@ async def on_message(message):
 
 banwords = discord.app_commands.Group(name='banwords', description='manages banned words.')
 @discord.app_commands.checks.has_permissions(administrator=True)
+@banwords.command(name='set', description='sets the banword list to a custom list from a url.')
+async def URL(interaction: discord.Interaction, url: str):
+    with open(f'Files/{interaction.guild.id}.json', 'r') as f:
+        data = json.load(f)
+        words = []
+        if await checkurl(url=url) != True:
+            await interaction.response.send_message('That is not a valid url. Please ensure that the url points to a text file, and all words are seperated with a newline.',ephemeral=True)
+            return
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as r:
+                for line in str(await r.text()).split('\n'):
+                    if line == '':
+                        continue
+                    words.append(line.strip())
+        with open('banwords.txt', 'w') as f:
+            for word in words:
+                f.write(f'{word}\n')
+        view = Buttons2()
+        await interaction.response.send_message('Does this look correct?',ephemeral=True,view=view,file=discord.File('banwords.txt'))
+        os.remove('banwords.txt')
+        time = 0
+        while view.show() == None:
+            await asyncio.sleep(.1)
+            time += .1
+            if time == 30:
+                await interaction.edit_original_message(content='You took too long to respond, please try again.',view=None,attachments=[])
+                return
+        if view.show() == True:
+            data['bannedwords'] = words
+            with open(f'Files/{interaction.guild.id}.json', 'w') as f:
+                json.dump(data, f)
+                await interaction.edit_original_message(content=f'The banword list has been set, use `/banwords show` to show it.', view=None,attachments=[])
+        else:
+            await interaction.edit_original_message(content='Cancelled.',view=None,attachments=[])
+
+@discord.app_commands.checks.has_permissions(administrator=True)
 @banwords.command(name='add', description='adds a word to the banned words list.')
 async def add(interaction: discord.Interaction, word: str):
     with open(f'Files/{interaction.guild.id}.json', 'r') as f:
@@ -761,7 +797,7 @@ async def enable(interaction: discord.Interaction):
         if data['bannedwords'] != False:
             await interaction.response.send_message('Banned words are already enabled!', ephemeral=True)
             return
-        data['bannedwords'] = True
+        data['bannedwords'] = []
         view = Buttons2()
         await interaction.response.send_message('would you like to use a preset banwords list?', view=view, ephemeral=True)
         time = 0
@@ -777,13 +813,18 @@ async def enable(interaction: discord.Interaction):
             await interaction.edit_original_message(content='Banned words are now enabled, but no words have been added. Use `/banwords` to manage them.',view=None)
             return
         if view.show() == True:
-            with open ('defaults.json', 'r') as k:
-                data2 = json.load(k)
-                with open(f'Files/{interaction.guild.id}.json', 'w') as z:
-                    data['bannedwords'] = data2['list']
-                    json.dump(data, z)
-                    await interaction.edit_original_message(content='Banned words are now enabled using the default list. Use `/banwords` to manage them.',view=None)
-                    return
+            async with aiohttp.ClientSession() as session:
+                async with session.get('https://www.cs.cmu.edu/~biglou/resources/bad-words.txt') as resp:
+                    p = await resp.text()
+                    f = []
+                    for word in p.split('\n'):
+                        if word != '':
+                            f.append(word.strip())
+                    with open(f'Files/{interaction.guild.id}.json', 'w') as z:
+                        data['bannedwords'] = f
+                        json.dump(data, z)
+                        await interaction.edit_original_message(content='Banned words are now enabled using the default list (taken from https://www.cs.cmu.edu/~biglou/resources/bad-words.txt). Use `/banwords` to manage them.',view=None)
+                        return
 @enable.error
 async def enable_error(interaction: discord.Interaction, error: Exception):
     await interaction.response.send_message(f'{interaction.user.mention}, You are not an admin on {interaction.guild.name}.')
@@ -811,9 +852,21 @@ async def show(interaction: discord.Interaction):
             await interaction.response.send_message('Banned words are not enabled!', ephemeral=True)
             return
         p = ''
-        for word in data['bannedwords']:
-            p += f'{word}{", " if word != data["bannedwords"][len(data["bannedwords"])-1] else ""}'
-        await interaction.response.send_message(f'Banned words: {p}', ephemeral=True)
+        if data['bannedwords'] == []:
+            await interaction.response.send_message('No words have been banned.', ephemeral=True)
+            return
+        if len(data['bannedwords']) < 21:
+            for word in data['bannedwords']:
+                p += f'{word}{", " if word != data["bannedwords"][len(data["bannedwords"])-1] else ""}'
+            await interaction.response.send_message(f'Banned words: {p}', ephemeral=True)
+        else:
+            for word in data['bannedwords']:
+                p += f'{word}{", " if word != data["bannedwords"][len(data["bannedwords"])-1] else ""}'
+            with open('banlist.txt', 'w') as f:
+                f.write(p)
+            await interaction.response.send_message('Banned words:', file=discord.File('banlist.txt'), ephemeral=True)
+            os.remove('banlist.txt')
+
 bot.tree.add_command(banwords)
 
 bot.run(token)
