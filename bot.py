@@ -320,29 +320,6 @@ async def ver(interaction: discord.Interaction):
     await interaction.response.send_message(f'I am {bot.user.name} version {Version}.\nMy source code can be found at {f"https://github.com/jumpers775/OneBot/releases/tag/{Version}" if  await checkurl(f"https://github.com/jumpers775/OneBot/releases/tag/{Version}") else "https://github.com/jumpers775/OneBot"}', ephemeral=True, suppress_embeds=True)
 bot.tree.add_command(ver)
 
-@app_commands.command(name='help', description='Help command.')
-async def help(interaction: discord.Interaction):
-    embed=discord.Embed(
-    title="Commands",
-        description="How the bot works:",
-        color=discord.Color.blurple())
-    embed.add_field(name=f'/ping', value="gets bots ping.", inline=False)
-    embed.add_field(name=f'/mute <user> <reason>', value="mutes a user. **must have admin perms**", inline=False)
-    embed.add_field(name=f"/unmute <user>", value="unmutes a user. **must have admin perms**", inline=False)
-    embed.add_field(name=f"/help ", value="displays this page", inline=False)
-    embed.add_field(name=f"/uptime ", value="shows bots uptime", inline=False)
-    embed.add_field(name=f"/stats <user>", value="shows users stats", inline=False)
-    embed.add_field(name=f"/version ", value="shows bots version", inline=False)
-    embed.add_field(name=f"/setmuterole <role>", value="sets the mute role", inline=False)
-    embed.add_field(name=f"/createmuterole ", value="creates the mute role", inline=False)
-    embed.add_field(name=f"/invite", value="gets the bot invite",inline=False)
-    embed.add_field(name=f"/xp enable", value="enables the xp system.", inline=False)
-    embed.add_field(name=f"/xp disable", value="disables the xp system.", inline=False)
-    embed.add_field(name=f"/xp set <user> <amount>", value="sets the xp amount for a given user.", inline=False)
-    embed.add_field(name=f"/xp add <user> <amount>", value="adds the given amount to a users xp.", inline=False)
-    embed.add_field(name=f"/xp remove <user> <amount>", value="removes the given amount from a users xp.", inline=False)
-    await interaction.response.send_message(embed=embed, ephemeral=True)
-bot.tree.add_command(help)
 
 @app_commands.command(name='invite', description='Invite link.')
 async def invite(interaction: discord.Interaction):
