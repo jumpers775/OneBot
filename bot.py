@@ -43,10 +43,11 @@ if not os.path.isdir('./Files'):
 async def on_member_join(member):
     with open(f'./Files/{member.guild.id}.json', 'r') as f:
         data = json.load(f)
-        if member.id not in data['xp']:
-            data['xp'][member.id] = 0
-            with open(f'./Files/{member.guild.id}.json', 'w') as f:
-                json.dump(data, f)
+        if data['xp'] == True:
+            if member.id not in data['xp']:
+                data['xp'][member.id] = 0
+                with open(f'./Files/{member.guild.id}.json', 'w') as f:
+                    json.dump(data, f)
 
 @bot.event
 async def on_ready():
@@ -60,7 +61,24 @@ async def on_ready():
         bot.tree.copy_global_to(guild=guild)
         await bot.tree.sync(guild=guild)
         with open(f'./Files/{guild.id}.json', 'r') as f:
-            x = json.load(f)
+            try:
+                x = json.load(f)
+            except:
+                x = {"MuteRole":False,"xp":False,"bannedwords":False}
+                with open(f'./Files/{guild.id}.json', 'w') as f:
+                    json.dump(x, f)
+            if 'MuteRole' not in x:
+                x['MuteRole'] = False
+                with open(f'./Files/{guild.id}.json', 'w') as f:
+                    json.dump(x, f)
+            if 'xp' not in x:
+                x['xp'] = False
+                with open(f'./Files/{guild.id}.json', 'w') as f:
+                    json.dump(x, f)
+            if 'bannedwords' not in x:
+                x['bannedwords'] = False
+                with open(f'./Files/{guild.id}.json', 'w') as f:
+                    json.dump(x, f)
             if x['xp'] != False:
                 if len(guild.members) != len(x['xp']):
                     for member in guild.members:
@@ -68,12 +86,12 @@ async def on_ready():
                             x['xp'][member.id] = 0
                     with open(f'./Files/{guild.id}.json', 'w') as f:
                         json.dump(x, f)
+    
     bot.starttime = datetime.datetime.now()
     bot.musicqueue = {}
     for guild in bot.guilds:
         bot.musicqueue[guild.id] = []
     print(f'{bot.user} has connected to Discord!')
-
 
 @bot.command()
 @commands.is_owner()
@@ -151,6 +169,9 @@ async def purge(interaction: discord.Interaction, member: discord.Member = None,
     else:
         await interaction.response.send_message(f'Purging {amount} messages from {member.mention}.')
         await interaction.channel.purge(limit=amount, check=lambda m: m.author == member)
+@purge.error
+async def purge_error(interaction: discord.Interaction, error: Exception):
+    await interaction.response.send_message('admin privileges are required to use this command.', ephemeral=True)
 bot.tree.add_command(purge)
 
 
@@ -609,6 +630,128 @@ async def games(interaction: discord.Interaction, game: typing.Literal['youtube'
     await interaction.response.send_message(f"click the link to play!\n{link}", suppress_embeds=True, ephemeral=True)
 bot.tree.add_command(games)
 
+@bot.listen('on_message')
+async def on_message(message):
+    if message.author == bot.user:
+        return
+    with open(f'Files/{message.guild.id}.json', 'r') as f:
+        data = json.load(f)
+        if data['bannedwords'] == False:
+            return
+        p = []
+        for word in data['bannedwords']:
+            if word in message.content:
+                p.append(word)
+        if len(p) != 0:
+            try:
+                await message.delete()
+            except:
+                return
+            string = ''
+            for word in p:
+                string += f'{word}{", " if word != p[len(p)-1] else ""} '
+            await message.channel.send(f'{message.author.mention}, please refrain from saying the following word{"s" if len(p) > 0 else ""}: {string}')
 
+banwords = discord.app_commands.Group(name='banwords', description='manages banned words.')
+@discord.app_commands.checks.has_permissions(administrator=True)
+@banwords.command(name='add', description='adds a word to the banned words list.')
+async def add(interaction: discord.Interaction, word: str):
+    with open(f'Files/{interaction.guild.id}.json', 'r') as f:
+        data = json.load(f)
+        if data['bannedwords'] == False:
+            await interaction.response.send_message('Banned words are not enabled!')
+            return
+        if word in data['bannedwords']:
+            await interaction.response.send_message(f'{word} is already banned.')
+            return
+        data['bannedwords'].append(word)
+        with open(f'Files/{interaction.guild.id}.json', 'w') as f:
+            json.dump(data, f)
+            await interaction.response.send_message(f'{word} has been banned.')
+@add.error
+async def add_error(interaction: discord.Interaction, error: Exception):
+    await interaction.response.send_message(f'{interaction.user.mention}, You are not an admin on {interaction.guild.name}.')
+@discord.app_commands.checks.has_permissions(administrator=True)
+@banwords.command(name='remove', description='removes a word from the banned words list.')
+async def remove(interaction: discord.Interaction, word: str):
+    with open(f'Files/{interaction.guild.id}.json', 'r') as f:
+        data = json.load(f)
+        if data['bannedwords'] == False:
+            await interaction.response.send_message('Banned words are not enabled!')
+            return
+        if word not in data['bannedwords']:
+            await interaction.response.send_message(f'{word} is not banned.')
+            return
+        data['bannedwords'].remove(word)
+        with open(f'Files/{interaction.guild.id}.json', 'w') as f:
+            json.dump(data, f)
+            await interaction.response.send_message(f'{word} has been unbanned.')
+@remove.error
+async def remove_error(interaction: discord.Interaction, error: Exception):
+    await interaction.response.send_message(f'{interaction.user.mention}, You are not an admin on {interaction.guild.name}.')
+
+class Buttons2(discord.ui.View):
+    def __init__(self, *, timeout=180,):
+        self.num = None
+        super().__init__(timeout=timeout)
+    @discord.ui.button(label="Yes",style=discord.ButtonStyle.green)
+    async def blurple_button(self,button:discord.ui.Button,interaction:discord.Interaction):
+        self.num = True
+    @discord.ui.button(label="No",style=discord.ButtonStyle.red)
+    async def gray_button(self,button:discord.ui.Button,interaction:discord.Interaction):
+        self.num = False
+    def show(self):
+        return self.num
+
+@discord.app_commands.checks.has_permissions(administrator=True)
+@banwords.command(name='enable', description='enables banned words.')
+async def enable(interaction: discord.Interaction):
+    with open(f'Files/{interaction.guild.id}.json', 'r') as f:
+        data = json.load(f)
+        if data['bannedwords'] != False:
+            await interaction.response.send_message('Banned words are already enabled!', ephemeral=True)
+            return
+        data['bannedwords'] = True
+        view = Buttons2()
+        await interaction.response.send_message('would you like to use a preset banwords list?', view=view, ephemeral=True)
+        time = 0
+        while view.show() is None:
+            if time == 300:
+                await interaction.edit_original_message('Timed out.')
+                return
+            await asyncio.sleep(.1)
+            time += .1
+        if view.show() == False:
+            with open(f'Files/{interaction.guild.id}.json', 'w') as f:
+                json.dump(data, f)
+            await interaction.edit_original_message(content='Banned words are now enabled, but no words have been added. Use `/banwords` to manage them.',view=None)
+            return
+        if view.show() == True:
+            with open ('defaults.json', 'r') as k:
+                data2 = json.load(k)
+                with open(f'Files/{interaction.guild.id}.json', 'w') as z:
+                    data['bannedwords'] = data2['defaultlist']
+                    json.dump(data, z)
+                    await interaction.edit_original_message(content='Banned words are now enabled using the default list. Use `/banwords` to manage them.',view=None)
+                    return
+@enable.error
+async def enable_error(interaction: discord.Interaction, error: Exception):
+    await interaction.response.send_message(f'{interaction.user.mention}, You are not an admin on {interaction.guild.name}.')
+
+@banwords.command(name='disable', description='disables banned words.')
+async def disable(interaction: discord.Interaction):
+    with open(f'Files/{interaction.guild.id}.json', 'r') as f:
+        data = json.load(f)
+        if data['bannedwords'] == False:
+            await interaction.response.send_message('Banned words are already disabled!', ephemeral=True)
+            return
+        data['bannedwords'] = False
+        with open(f'Files/{interaction.guild.id}.json', 'w') as f:
+            json.dump(data, f)
+            await interaction.response.send_message(content='Banned words are now disabled.')
+@disable.error
+async def disable_error(interaction: discord.Interaction, error: Exception):
+    await interaction.response.send_message(f'{interaction.user.mention}, You are not an admin on {interaction.guild.name}.')
+bot.tree.add_command(banwords)
 
 bot.run(token)
