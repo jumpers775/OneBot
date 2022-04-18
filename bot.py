@@ -649,8 +649,8 @@ async def remove_error(interaction: discord.Interaction, error: Exception):
 bot.tree.add_command(xp)
 
 @app_commands.command(name='games', description='plays a party game')
-async def games(interaction: discord.Interaction, game: typing.Literal['youtube', 'poker', 'chess', 'betrayal', 'fishing', 'letter-league', 'word-snack', 'sketch-heads', 'spellcast', 'awkword', 'checkers', 'blazing-8s', 'land-io', 'putt-party']):
-    if interaction.user.voice.channel is None:
+async def games(interaction: discord.Interaction, game: typing.Literal['youtube', 'poker', 'chess', 'betrayal', 'fishing', 'letter-league', 'word-snack', 'sketch-heads', 'spellcast', 'awkword', 'checkers', 'blazing-8s', 'land-io', 'putt-party']):  
+    if interaction.user.voice is None:
         await interaction.response.send_message('You must be in a voice channel to play a game.')
         return
     link = await bot.togetherControl.create_link(interaction.user.voice.channel.id, game)
