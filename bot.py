@@ -524,7 +524,10 @@ async def stats(interaction: discord.Interaction, user: discord.Member = None):
     with open(f'Files/{interaction.guild.id}.json', 'r') as f:
         data = json.load(f)
         if data['xp'] != False:
-            embed.add_field(name='XP', value=data['xp'][str(user.id)])
+            if user.id != bot.user.id:
+                embed.add_field(name='XP', value=data['xp'][str(user.id)])
+            else:
+                embed.add_field(name='XP', value='∞')
         else:
             embed.add_field(name='XP', value=0)
     await interaction.response.send_message(embed=embed)
