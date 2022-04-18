@@ -926,7 +926,7 @@ async def create(interaction: discord.Interaction):
         )
         with open(f'Files/{interaction.guild.id}.json', 'w') as f:
             json.dump(data, f)
-            await interaction.response.send_message(content=f'Logs channel has been created{", and logging has been enabled" if p else ""}.', ephemeral=True)
+            await interaction.response.send_message(content=f'lognnel has been created{", and logging has been enabled" if p else ""}.', ephemeral=True)
 bot.tree.add_command(logs)
 @bot.listen('on_message')
 async def on_message(message: discord.Message):
@@ -941,6 +941,6 @@ async def on_message(message: discord.Message):
         channel = discord.utils.get(message.guild.channels, id=data['logchannel'])
         if channel == None:
             return
-        await channel.send(f'{message.author.mention}:\n {message.content}')
+        await channel.send(f'{message.author.mention}:{message.channel.mention}\n {message.content}')
 
 bot.run(token)
