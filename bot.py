@@ -260,8 +260,8 @@ async def unmute_error(interaction: discord.Interaction, error: Exception):
 @discord.app_commands.checks.has_permissions(administrator=True)
 @app_commands.command(name='createmuterole', description='creates the mute role.')
 async def createmuterole(interaction: discord.Interaction, role: str):
-    await interaction.guild.create_role(name=role)
-    role = discord.utils.get(interaction.guild.roles, name=role)
+    role = await interaction.guild.create_role(name=role)
+    await interaction.response.send_message(f'Creating MuteRole {role.mention}.')
     for channel in interaction.guild.channels:
         await channel.set_permissions(
             role,
@@ -274,7 +274,7 @@ async def createmuterole(interaction: discord.Interaction, role: str):
         x['MuteRole'] = role.id
         with open(f'./Files/{interaction.guild.id}.json', 'w') as f:
             json.dump(x, f)
-    await interaction.response.send_message(f'Mute role created and set to {role.mention}.')
+    await interaction.edit_original_message(content=f'Mute role created and set to {role.mention}.')
 
 @createmuterole.error
 async def setmuterole_error(interaction: discord.Interaction, error: Exception):
