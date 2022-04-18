@@ -1,4 +1,4 @@
-Version = '3.0.1'
+Version = '3.0.2b1'
 import os
 import ffmpeg
 import math
@@ -12,7 +12,7 @@ from youtube_search import YoutubeSearch
 from discord_together import DiscordTogether
 from dotenv import load_dotenv
 from discord.ext import commands
-from discord import app_commands
+from discord import Attachment, app_commands
 import os
 import datetime
 from discord.ext.commands import Greedy
@@ -77,6 +77,10 @@ async def on_ready():
                     json.dump(x, f)
             if 'bannedwords' not in x:
                 x['bannedwords'] = False
+                with open(f'./Files/{guild.id}.json', 'w') as f:
+                    json.dump(x, f)
+            if 'logchannel' not in x:
+                x['logchannel'] = False
                 with open(f'./Files/{guild.id}.json', 'w') as f:
                     json.dump(x, f)
             if x['xp'] != False:
@@ -671,7 +675,14 @@ async def on_message(message):
         p = []
         for word in data['bannedwords']:
             if word in message.content:
-                p.append(word)
+                if message.content.startswith(word+' '):
+                    p.append(word)
+                elif message.content.endswith(' '+word):
+                    p.append(word)
+                elif ' '+word+' ' in message.content:
+                    p.append(word)
+                elif word == message.content:
+                    p.append(word)
         if len(p) != 0:
             try:
                 await message.delete()
@@ -848,5 +859,88 @@ async def show(interaction: discord.Interaction):
             os.remove('banlist.txt')
 
 bot.tree.add_command(banwords)
+
+logs = discord.app_commands.Group(name='logs', description='manages logs.')
+@discord.app_commands.checks.has_permissions(administrator=True)
+@logs.command(name='enable', description='enables logs.')
+async def enable(interaction: discord.Interaction, channel: discord.TextChannel):
+    with open(f'Files/{interaction.guild.id}.json', 'r') as f:
+        data = json.load(f)
+        if data['logchannel'] != False:
+            await interaction.response.send_message('Logs are already enabled!', ephemeral=True)
+            return
+        data['logchannel'] = channel.id
+        with open(f'Files/{interaction.guild.id}.json', 'w') as f:
+            json.dump(data, f)
+            await interaction.response.send_message(content='Logs are now enabled.', ephemeral=True)
+@enable.error
+async def enable_error(interaction: discord.Interaction, error: Exception):
+    await interaction.response.send_message(f'{interaction.user.mention}, You are not an admin on {interaction.guild.name}.')
+
+@discord.app_commands.checks.has_permissions(administrator=True)
+@logs.command(name='disable', description='disables logs.')
+async def disable(interaction: discord.Interaction):
+    with open(f'Files/{interaction.guild.id}.json', 'r') as f:
+        data = json.load(f)
+        if data['logchannel'] == False:
+            await interaction.response.send_message('Logs are already disabled!', ephemeral=True)
+            return
+        data['logchannel'] = False
+        with open(f'Files/{interaction.guild.id}.json', 'w') as f:
+            json.dump(data, f)
+            await interaction.response.send_message(content='Logs are now disabled.', ephemeral=True)
+@disable.error
+async def disable_error(interaction: discord.Interaction, error: Exception):
+    await interaction.response.send_message(f'{interaction.user.mention}, You are not an admin on {interaction.guild.name}.')
+
+@discord.app_commands.checks.has_permissions(administrator=True)
+@logs.command(name='setchannel', description='sets a channel to send logs to.')
+async def setchannel(interaction: discord.Interaction, channel: discord.TextChannel):
+    with open(f'Files/{interaction.guild.id}.json', 'r') as f:
+        data = json.load(f)
+        if data['logchannel'] == False:
+            await interaction.response.send_message('Logs are not enabled!', ephemeral=True)
+            return
+        data['logchannel'] = channel.id
+        with open(f'Files/{interaction.guild.id}.json', 'w') as f:
+            json.dump(data, f)
+            await interaction.response.send_message(content='Logs are now set to this channel.', ephemeral=True)
+@setchannel.error
+async def setchannel_error(interaction: discord.Interaction, error: Exception):
+    await interaction.response.send_message(f'{interaction.user.mention}, You are not an admin on {interaction.guild.name}.')
+
+@discord.app_commands.checks.has_permissions(administrator=True)
+@logs.command(name='create', description='creates a logs channel.')
+async def create(interaction: discord.Interaction):
+    with open(f'Files/{interaction.guild.id}.json', 'r') as f:
+        data = json.load(f)
+        channel = await interaction.guild.create_text_channel(name='logs', reason='Logs channel created by the bot.')
+        p = False
+        if data['logchannel'] == False:
+            p = True
+        data['logchannel'] = channel.id
+        await channel.set_permissions(
+            discord.utils.get(interaction.guild.roles, name='@everyone'),
+            send_messages=False,
+            read_messages=False
+        )
+        with open(f'Files/{interaction.guild.id}.json', 'w') as f:
+            json.dump(data, f)
+            await interaction.response.send_message(content=f'Logs channel has been created{", and logging has been enabled" if p else ""}.', ephemeral=True)
+bot.tree.add_command(logs)
+@bot.listen('on_message')
+async def on_message(message: discord.Message):
+    if message.author.bot:
+        return
+    with open(f'Files/{message.guild.id}.json', 'r') as f:
+        data = json.load(f)
+        if data['logchannel'] == False:
+            return
+        if data['logchannel'] == message.channel.id:
+            return
+        channel = discord.utils.get(message.guild.channels, id=data['logchannel'])
+        if channel == None:
+            return
+        await channel.send(f'{message.author.mention}:\n {message.content}')
 
 bot.run(token)
