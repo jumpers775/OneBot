@@ -18,6 +18,10 @@ import datetime
 from discord.ext.commands import Greedy
 import typing
 from discord.ext.commands import Context
+import platform
+import socket
+import psutil
+import cpuinfo
 async def checkurl(url: str):
     try:
        async with aiohttp.ClientSession() as session:
@@ -942,5 +946,24 @@ async def on_message(message: discord.Message):
         if channel == None:
             return
         await channel.send(f'{message.author.mention}:{message.channel.mention}\n {message.content}')
+
+
+@app_commands.command(name='sysinfo', description='gets info of host computor.')
+async def sysinfo(interaction: discord.Interaction):
+  sysinfo = ''
+  if platform.system() == 'Linux':
+    with open('/etc/os-release', 'r') as f:
+      for a in f.readlines():
+        if a.startswith('NAME='):
+          sysinfo+=f'''OS: {a.split('"')[1]}{" Linux" if "Linux" not in a else ""} {platform.machine()}\n'''
+        if a.startswith('VERSION='):
+          sysinfo+=f'''Version: {a.split('"')[1]}\n'''
+    sysinfo+=f'''Kernel: {platform.release()}\n'''
+    sysinfo+=f'''Cpu: {cpuinfo.cpu.info[0]['model name']}'''
+    sysinfo+=f'''Ram: {str(round(psutil.virtual_memory().total / (1024.0 **3)))+" GB"}'''
+    interaction.response.send_message(sysinfo)
+  else:
+    interaction.response.send_message('This computor runs a non-Linux OS, which is unsupported by this command at the moment')
+bot.tree.add_command(sysinfo)
 
 bot.run(token)
