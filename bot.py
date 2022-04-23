@@ -959,11 +959,11 @@ async def sysinfo(interaction: discord.Interaction):
         if a.startswith('VERSION='):
           sysinfo+=f'''Version: {a.split('"')[1]}\n'''
     sysinfo+=f'''Kernel: {platform.release()}\n'''
-    sysinfo+=f'''Cpu: {cpuinfo.cpu.info[0]['model name']}'''
+    sysinfo+=f'''Cpu: {cpuinfo.cpu.info[0]['model name']}\n'''
     sysinfo+=f'''Ram: {str(round(psutil.virtual_memory().total / (1024.0 **3)))+" GB"}'''
-    interaction.response.send_message(sysinfo)
+    await interaction.response.send_message(sysinfo)
   else:
-    interaction.response.send_message('This computor runs a non-Linux OS, which is unsupported by this command at the moment')
+    await interaction.response.send_message('This computor runs a non-Linux OS, which is unsupported by this command at the moment')
 bot.tree.add_command(sysinfo)
 
 bot.run(token)
