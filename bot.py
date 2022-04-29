@@ -5,6 +5,7 @@ import math
 import discord
 import aiohttp
 import asyncio
+import subprocess
 import json
 from requests import options
 import youtube_dl
@@ -982,4 +983,17 @@ async def say(interaction: discord.Interaction, *, something: str):
                     return
             await interaction.response.send_message(something)
 bot.tree.add_command(say)
+
+@app_commands.command(name='neofetch', description='gets a neofetch.')
+async def neofetch(interaction: discord.Interaction):
+    output = subprocess.run(["neofetch"], capture_output=True)
+    await interaction.response.send_message(output.stdout.decode('utf-8'))
+try:
+    output = subprocess.run(["neofetch"], capture_output=True)
+    if platform.system() == 'Windows':
+        raise Exception
+    else:
+        bot.tree.add_command(neofetch)
+except:
+    pass
 bot.run(token)
