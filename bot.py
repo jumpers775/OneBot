@@ -969,7 +969,7 @@ async def sysinfo(interaction: discord.Interaction):
     await interaction.response.send_message('This computor runs a non-Linux OS, which is unsupported by this command at the moment')
 bot.tree.add_command(sysinfo)
 
-@bot.tree.add_command(name='say', description='says something')
+@app_commands.command(name='say', description='says something.')
 async def say(interaction: discord.Interaction, *, something: str):
     with open(f'Files/{interaction.guild.id}.json', 'r') as f:
         data = json.load(f)
@@ -980,4 +980,5 @@ async def say(interaction: discord.Interaction, *, something: str):
                 if a in something:
                     await interaction.response.send_message('You cannot make me say words that are blocked silly.', ephemeral=True)
                     return
+bot.tree.add_command(say)
 bot.run(token)
