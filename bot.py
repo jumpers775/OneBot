@@ -973,10 +973,10 @@ bot.tree.add_command(sysinfo)
 async def say(interaction: discord.Interaction, *, something: str):
     with open(f'Files/{interaction.guild.id}.json', 'r') as f:
         data = json.load(f)
-        if data['banwords'] == False:
+        if data['bannedwords'] == False:
             await interaction.response.send_message(something)
         else:
-            for a in data['banwords']:
+            for a in data['bannedwords']:
                 if a in something:
                     await interaction.response.send_message('You cannot make me say words that are blocked silly.', ephemeral=True)
                     return
