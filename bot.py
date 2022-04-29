@@ -980,5 +980,6 @@ async def say(interaction: discord.Interaction, *, something: str):
                 if a in something:
                     await interaction.response.send_message('You cannot make me say words that are blocked silly.', ephemeral=True)
                     return
+            await interaction.response.send_message(something)
 bot.tree.add_command(say)
 bot.run(token)
