@@ -984,16 +984,4 @@ async def say(interaction: discord.Interaction, *, something: str):
             await interaction.response.send_message(something)
 bot.tree.add_command(say)
 
-@app_commands.command(name='neofetch', description='gets a neofetch.')
-async def neofetch(interaction: discord.Interaction):
-    output = subprocess.run(["neofetch"], capture_output=True)
-    await interaction.response.send_message(output.stdout.decode('utf-8'))
-try:
-    output = subprocess.run(["neofetch"], capture_output=True)
-    if platform.system() == 'Windows':
-        raise Exception
-    else:
-        bot.tree.add_command(neofetch)
-except:
-    pass
 bot.run(token)
